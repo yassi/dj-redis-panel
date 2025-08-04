@@ -1,2 +1,2 @@
 # dj-redis-panel
-Django admin interface for redi
+Django admin interface for redis
