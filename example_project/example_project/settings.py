@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "dj_redis_panel",
+    "example_project",  # For management commands
 ]
 
 MIDDLEWARE = [

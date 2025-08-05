@@ -76,7 +76,7 @@
                     </td>
                     <td>
                         {% if instance.status == 'connected' %}
-                            <a href="#" class="default" onclick="alert('Redis browser for {{ instance.alias }} coming soon!')">
+                            <a href="{% url 'dj_redis_panel:key_search' instance.alias %}" class="default">
                                 {% trans 'Browse Keys' %}
                             </a>
                         {% else %}
