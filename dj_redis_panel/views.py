@@ -10,12 +10,10 @@ from .redis_utils import RedisPanelUtils
 
 @staff_member_required
 def index(request):
-    # Get configured Redis instances
     instances = RedisPanelUtils.get_instances()
-
-    # Check connection status for each configured instance
     redis_instances = []
     for alias, config in instances.items():
+        # This is the meta data that will be displayed in the index page
         instance_info = {
             "alias": alias,
             "config": config,
@@ -24,9 +22,8 @@ def index(request):
             "error": None,
         }
 
-        # Use the test_connection method from RedisPanelUtils
-        connection_result = RedisPanelUtils.test_connection(alias)
-        instance_info.update(connection_result)
+        instance_meta_data = RedisPanelUtils.get_instance_meta_data(alias)
+        instance_info.update(instance_meta_data)
 
         redis_instances.append(instance_info)
 

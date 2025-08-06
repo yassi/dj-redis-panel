@@ -44,14 +44,14 @@
                     </td>
                     <td>
                         {% if instance.info %}
-                            {{ instance.info.version }}
+                            {{ instance.info.redis_version }}
                         {% else %}
                             <span class="quiet">—</span>
                         {% endif %}
                     </td>
                     <td>
                         {% if instance.info %}
-                            {{ instance.info.memory_used }}
+                            {{ instance.info.used_memory_human }}
                         {% else %}
                             <span class="quiet">—</span>
                         {% endif %}
@@ -65,7 +65,7 @@
                     </td>
                     <td>
                         {% if instance.info %}
-                            {{ instance.info.total_keys }}
+                            {{ instance.total_keys }}
                         {% else %}
                             <span class="quiet">—</span>
                         {% endif %}

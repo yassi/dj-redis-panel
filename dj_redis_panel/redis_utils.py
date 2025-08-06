@@ -71,8 +71,10 @@ class RedisPanelUtils:
         return redis.Redis(**connection_params)
 
     @classmethod
-    def test_connection(cls, instance_alias: str) -> Dict[str, Any]:
-        """Test connection to a Redis instance and return status info."""
+    def get_instance_meta_data(cls, instance_alias: str) -> Dict[str, Any]:
+        """
+        Ping a redis instance and return meta data about the instance.
+        """
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
             redis_conn.ping()
@@ -94,14 +96,14 @@ class RedisPanelUtils:
 
             return {
                 "status": "connected",
-                "info": {
-                    "version": info.get("redis_version", "Unknown"),
-                    "memory_used": info.get("used_memory_human", "Unknown"),
-                    "connected_clients": info.get("connected_clients", 0),
-                    "uptime_in_seconds": info.get("uptime_in_seconds", 0),
-                    "total_keys": total_keys,
-                },
+                "info": info,
+                "total_keys": total_keys,
                 "error": None,
             }
         except Exception as e:
-            return {"status": "disconnected", "info": None, "error": str(e)}
+            return {
+                "status": "disconnected",
+                "info": None,
+                "total_keys": 0,
+                "error": str(e),
+            }
