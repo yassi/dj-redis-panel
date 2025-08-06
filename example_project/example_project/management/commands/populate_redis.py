@@ -1,5 +1,4 @@
 from django.core.management.base import BaseCommand
-from django_redis import get_redis_connection
 from dj_redis_panel.redis_utils import RedisPanelUtils
 import json
 import random
@@ -54,7 +53,7 @@ class Command(BaseCommand):
 
     def populate_instance(self, instance_alias, clear_first=False):
         try:
-            redis_conn = get_redis_connection(instance_alias)
+            redis_conn = RedisPanelUtils.get_redis_connection(instance_alias)
 
             # Test multiple databases
             for db in [0, 1, 2]:
