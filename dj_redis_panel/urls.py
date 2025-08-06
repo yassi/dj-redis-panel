@@ -5,4 +5,15 @@ app_name = "dj_redis_panel"
 
 urlpatterns = [
     path("", views.index, name="index"),
+    path("<str:instance_alias>/", views.instance_overview, name="instance_overview"),
+    path(
+        "<str:instance_alias>/db/<int:db_number>/keys/",
+        views.key_search,
+        name="key_search",
+    ),
+    path(
+        "<str:instance_alias>/db/<int:db_number>/key/<str:key_name>/",
+        views.key_detail,
+        name="key_detail",
+    ),
 ]

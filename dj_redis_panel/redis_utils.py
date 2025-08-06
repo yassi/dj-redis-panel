@@ -1,5 +1,6 @@
-from django_redis import get_redis_connection
+import redis
 from django.conf import settings
+from typing import Dict, Any, Optional
 
 
 REDIS_PANEL_SETTINGS_NAME = "DJ_REDIS_PANEL_SETTINGS"
@@ -7,20 +8,100 @@ REDIS_PANEL_SETTINGS_NAME = "DJ_REDIS_PANEL_SETTINGS"
 
 class RedisPanelUtils:
     @classmethod
-    def get_settings(cls):
+    def get_settings(cls) -> Dict[str, Any]:
         panel_settings = getattr(settings, REDIS_PANEL_SETTINGS_NAME, {})
         return panel_settings
 
     @classmethod
-    def get_instances(cls):
+    def get_instances(cls) -> Dict[str, Dict[str, Any]]:
         panel_settings = cls.get_settings()
         instances = panel_settings.get("INSTANCES", {})
         return instances
 
     @classmethod
-    def get_redis_connection(cls):
-        panel_settings = cls.get_settings()
-        redis_connection = get_redis_connection(
-            alias=panel_settings.get("REDIS_ALIAS", "default"),
-        )
-        return redis_connection
+    def get_redis_connection(cls, instance_alias: str) -> redis.Redis:
+        """
+        Create a direct Redis connection for the specified instance.
+        Supports single Redis instances with future extensibility for clusters.
+        """
+        instances = cls.get_instances()
+        if instance_alias not in instances:
+            raise ValueError(
+                f"Redis instance '{instance_alias}' not found in configuration"
+            )
+
+        instance_config = instances[instance_alias]
+
+        # Handle different connection types (future: cluster, sentinel)
+        connection_type = instance_config.get("type", "single")
+
+        if connection_type == "single":
+            return cls._create_single_connection(instance_config)
+        # Future: elif connection_type == "cluster":
+        #     return cls._create_cluster_connection(instance_config)
+        else:
+            raise ValueError(f"Unsupported Redis connection type: {connection_type}")
+
+    @classmethod
+    def _create_single_connection(cls, config: Dict[str, Any]) -> redis.Redis:
+        """Create a connection to a single Redis instance."""
+        connection_params = {
+            "host": config.get("host", "127.0.0.1"),
+            "port": config.get("port", 6379),
+            "db": 0,  # Always connect to DB 0 initially, switch in UI
+            "decode_responses": True,  # Always decode for management operations
+        }
+
+        # Optional connection parameters
+        if "password" in config:
+            connection_params["password"] = config["password"]
+        if "username" in config:
+            connection_params["username"] = config["username"]
+        if "ssl" in config:
+            connection_params["ssl"] = config["ssl"]
+        if "ssl_cert_reqs" in config:
+            connection_params["ssl_cert_reqs"] = config["ssl_cert_reqs"]
+        if "socket_timeout" in config:
+            connection_params["socket_timeout"] = config["socket_timeout"]
+        if "socket_connect_timeout" in config:
+            connection_params["socket_connect_timeout"] = config[
+                "socket_connect_timeout"
+            ]
+
+        return redis.Redis(**connection_params)
+
+    @classmethod
+    def test_connection(cls, instance_alias: str) -> Dict[str, Any]:
+        """Test connection to a Redis instance and return status info."""
+        try:
+            redis_conn = cls.get_redis_connection(instance_alias)
+            redis_conn.ping()
+            info = redis_conn.info()
+
+            # Get total keys across all databases more efficiently
+            total_keys = 0
+            current_db = redis_conn.connection_pool.connection_kwargs.get("db", 0)
+
+            for db in range(16):  # Redis default is 16 databases
+                try:
+                    redis_conn.select(db)
+                    total_keys += redis_conn.dbsize()
+                except:
+                    break  # Stop if database doesn't exist
+
+            # Reset to original database
+            redis_conn.select(current_db)
+
+            return {
+                "status": "connected",
+                "info": {
+                    "version": info.get("redis_version", "Unknown"),
+                    "memory_used": info.get("used_memory_human", "Unknown"),
+                    "connected_clients": info.get("connected_clients", 0),
+                    "uptime_in_seconds": info.get("uptime_in_seconds", 0),
+                    "total_keys": total_keys,
+                },
+                "error": None,
+            }
+        except Exception as e:
+            return {"status": "disconnected", "info": None, "error": str(e)}

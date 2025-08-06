@@ -152,23 +152,10 @@ CACHES = {
 # Django Redis Panel Configuration
 DJ_REDIS_PANEL_SETTINGS = {
     "INSTANCES": {
-        "default": {
-            "description": "Default Redis Cache",
+        "local_redis": {
+            "description": "Local Redis Instance",
             "host": "127.0.0.1",
             "port": 6379,
-            "db": 0,
-        },
-        "sessions": {
-            "description": "Session Storage",
-            "host": "127.0.0.1",
-            "port": 6379,
-            "db": 1,
-        },
-        "cache_db": {
-            "description": "Application Cache",
-            "host": "127.0.0.1",
-            "port": 6379,
-            "db": 2,
         },
     }
 }

@@ -1,0 +1,199 @@
+{% extends "admin/dj_redis_panel/base.html" %}
+{% load i18n admin_urls static %}
+
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+    &rsaquo; <a href="{% url 'dj_redis_panel:index' %}">{% trans 'Redis Instances' %}</a>
+    &rsaquo; <a href="{% url 'dj_redis_panel:instance_overview' instance_alias %}">{{ instance_alias }}</a>
+    &rsaquo; {% trans 'Search Keys' %} (db:{{ selected_db }})
+</div>
+{% endblock %}
+
+
+{% block content %}
+<div class="module">
+    {% if success_message %}
+    <div class="messagelist">
+        <div class="success">{{ success_message }}</div>
+    </div>
+    {% endif %}
+    
+    {% if error_message %}
+    <div class="messagelist">
+        <div class="error">{{ error_message }}</div>
+    </div>
+    {% endif %}
+    
+    <!-- Search Form -->
+    <div class="module">
+        <h2>{% trans 'Search Redis Keys' %} - {{ instance_alias }} DB {{ selected_db }}</h2>
+        <form method="get" class="search-form">
+            <div class="form-row">
+                <div style="display: flex; gap: 10px; align-items: end;">
+                    <div>
+                        <label for="q">{% trans 'Key Pattern:' %}</label>
+                        <input type="text" id="q" name="q" value="{{ search_query }}" 
+                               placeholder="*" class="vTextField" style="width: 300px;">
+                        <div class="help">{% trans 'Use * for wildcards, e.g., user:* or *:cache' %}</div>
+                    </div>
+                    <div>
+                        <input type="submit" value="{% trans 'Search' %}" class="default">
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Error Display -->
+    {% if error_message %}
+    <div class="module">
+        <div class="errors">
+            <p><strong>{% trans 'Error:' %}</strong> {{ error_message }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Results Summary -->
+    {% if not error_message %}
+    <div class="module">
+        <p class="help">
+            {% if total_keys > 0 %}
+                {% blocktrans with total=total_keys showing=showing_keys %}Found {{ total }} keys, showing first {{ showing_keys }}{% endblocktrans %}
+                {% if total_keys > showing_keys %}
+                    <br><em>{% trans 'Refine your search pattern to see more specific results.' %}</em>
+                {% endif %}
+            {% else %}
+                {% trans 'No keys found matching your search pattern.' %}
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+
+    <!-- Results Table -->
+    {% if keys_data and not error_message %}
+    <div class="results">
+        <table id="result_list">
+            <thead>
+                <tr>
+                    <th scope="col">{% trans 'Key' %}</th>
+                    <th scope="col">{% trans 'Type' %}</th>
+                    <th scope="col">{% trans 'Size/Length' %}</th>
+                    <th scope="col">{% trans 'TTL' %}</th>
+                    <th scope="col">{% trans 'Actions' %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for key_info in keys_data %}
+                <tr class="{% cycle 'row1' 'row2' %}">
+                    <td>
+                        <strong>{{ key_info.key }}</strong>
+                    </td>
+                    <td>
+                        <span class="key-type key-type-{{ key_info.type }}">
+                            {{ key_info.type|upper }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if key_info.type == 'string' %}
+                            {{ key_info.size }} {% trans 'bytes' %}
+                        {% else %}
+                            {{ key_info.size }} {% trans 'items' %}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if key_info.ttl %}
+                            {{ key_info.ttl }}s
+                        {% else %}
+                            <span class="quiet">{% trans 'No expiry' %}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'dj_redis_panel:key_detail' instance_alias selected_db key_info.key %}" class="viewlink">
+                            {% trans 'View' %}
+                        </a>
+                        <span class="quiet"> | </span>
+                        <a href="{% url 'dj_redis_panel:key_detail' instance_alias selected_db key_info.key %}" class="deletelink">
+                            {% trans 'Delete' %}
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Back Navigation -->
+    <div class="module" style="margin-top: 20px;">
+        <p>
+            <a href="{% url 'dj_redis_panel:instance_overview' instance_alias %}" class="button">
+                ← {% trans 'Back to Instance Overview' %}
+            </a>
+            <span style="margin: 0 10px;">|</span>
+            <a href="{% url 'dj_redis_panel:index' %}" class="button">
+                {% trans 'All Instances' %}
+            </a>
+        </p>
+    </div>
+</div>
+
+<style>
+#result_list {
+    width: 100%;
+}
+.search-form {
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border-color, #ddd);
+}
+.search-form .form-row {
+    margin: 0;
+}
+.search-form label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+.search-form .help {
+    font-size: 11px;
+    margin-top: 3px;
+    opacity: 0.7;
+}
+.key-type {
+    font-size: 10px;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: white;
+}
+.key-type-string { background: #417690; }
+.key-type-list { background: #30a030; }
+.key-type-set { background: #e47911; }
+.key-type-zset { background: #7b68ee; }
+.key-type-hash { background: #dc2626; }
+.key-type-stream { background: #059669; }
+.messagelist {
+    margin: 0 0 20px 0;
+}
+.messagelist .success,
+.messagelist .error {
+    padding: 10px 15px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    border: 1px solid;
+}
+.messagelist .success {
+    background-color: var(--message-success-bg, #d4edda);
+    color: var(--message-success-fg, #155724);
+    border-color: var(--message-success-border, #c3e6cb);
+}
+.messagelist .error {
+    background-color: var(--message-error-bg, #f8d7da);
+    color: var(--message-error-fg, #721c24);
+    border-color: var(--message-error-border, #f5c6cb);
+}
+</style>
+{% endblock %}

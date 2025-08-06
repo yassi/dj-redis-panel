@@ -1,0 +1,388 @@
+{% extends "admin/dj_redis_panel/base.html" %}
+{% load i18n admin_urls static %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+    &rsaquo; <a href="{% url 'dj_redis_panel:index' %}">{% trans 'Redis Instances' %}</a>
+    &rsaquo; <a href="{% url 'dj_redis_panel:instance_overview' instance_alias %}">{{ instance_alias }}</a>
+    &rsaquo; <a href="{% url 'dj_redis_panel:key_search' instance_alias db_number %}">{% trans 'Search Keys' %} (db:{{ db_number }})</a>
+    &rsaquo; {{ key_data.name }}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="module">
+    {% if success_message %}
+    <div class="messagelist">
+        <div class="success">{{ success_message }}</div>
+    </div>
+    {% endif %}
+    
+    {% if error_message %}
+    <div class="messagelist">
+        <div class="error">{{ error_message }}</div>
+    </div>
+    {% endif %}
+
+    {% if key_data %}
+    <div class="module">
+        <h2>{% trans 'Redis Key Details' %} - {{ instance_alias }} DB {{ db_number }}</h2>
+        
+        <!-- Key Information -->
+        <fieldset class="module aligned">
+            <h2>{% trans 'Key Information' %}</h2>
+            <div class="form-row">
+                <div class="field-box">
+                    <label><strong>{% trans 'Key Name:' %}</strong></label>
+                    <div class="readonly">
+                        <code>{{ key_data.name }}</code>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="field-box">
+                    <label><strong>{% trans 'Type:' %}</strong></label>
+                    <div class="readonly">
+                        <span class="key-type-badge key-type-{{ key_data.type }}">{{ key_data.type|upper }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="field-box">
+                    <label><strong>{% trans 'Size:' %}</strong></label>
+                    <div class="readonly">
+                        {% if key_data.type == "string" %}
+                            {{ key_data.size }} {% trans 'bytes' %}
+                        {% else %}
+                            {{ key_data.size }} {% trans 'elements' %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="field-box">
+                    <label><strong>{% trans 'TTL:' %}</strong></label>
+                    <div class="readonly">
+                        {% if key_data.ttl %}
+                            {{ key_data.ttl }} {% trans 'seconds' %}
+                        {% else %}
+                            <span class="quiet">{% trans 'No expiration' %}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </fieldset>
+
+        <!-- TTL Management -->
+        <fieldset class="module aligned">
+            <h2>{% trans 'TTL Management' %}</h2>
+            <form method="post" class="ttl-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_ttl">
+                <div class="form-row">
+                    <div class="field-box">
+                        <label for="new_ttl">{% trans 'Set TTL (seconds):' %}</label>
+                        <input type="number" id="new_ttl" name="new_ttl" 
+                               value="{{ key_data.ttl|default:'' }}" 
+                               placeholder="{% trans 'Leave empty to remove expiration' %}"
+                               class="vIntegerField">
+                        <div class="help">
+                            {% trans 'Set number of seconds until key expires. Leave empty or use -1 to remove expiration.' %}
+                        </div>
+                    </div>
+                    <div class="submit-row">
+                        <input type="submit" value="{% trans 'Update TTL' %}" class="default">
+                    </div>
+                </div>
+            </form>
+        </fieldset>
+
+        <!-- Key Value Display and Editing -->
+        <fieldset class="module aligned">
+            <h2>{% trans 'Key Value' %}</h2>
+            
+            {% if key_data.type == "string" %}
+            <!-- String value editing -->
+            <form method="post" class="value-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_value">
+                <div class="form-row">
+                    <div class="field-box">
+                        <label for="new_value">{% trans 'Value:' %}</label>
+                        <textarea id="new_value" name="new_value" class="vLargeTextField" rows="10">{{ key_data.value }}</textarea>
+                        <div class="help">{% trans 'Edit the string value directly.' %}</div>
+                    </div>
+                    <div class="submit-row">
+                        <input type="submit" value="{% trans 'Update Value' %}" class="default">
+                    </div>
+                </div>
+            </form>
+            
+            {% elif key_data.type == "list" %}
+            <!-- List display -->
+            <div class="key-value-display">
+                <h3>{% trans 'List Elements' %} ({{ key_data.size }} {% trans 'items' %})</h3>
+                {% if key_data.value %}
+                <table class="key-value-table">
+                    <thead>
+                        <tr>
+                            <th>{% trans 'Index' %}</th>
+                            <th>{% trans 'Value' %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in key_data.value %}
+                        <tr>
+                            <td><code>{{ forloop.counter0 }}</code></td>
+                            <td><code>{{ item }}</code></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="quiet">{% trans 'List is empty' %}</p>
+                {% endif %}
+                <div class="help">
+                    {% trans 'List editing is not supported in this interface. Use Redis CLI or other tools for complex list operations.' %}
+                </div>
+            </div>
+            
+            {% elif key_data.type == "set" %}
+            <!-- Set display -->
+            <div class="key-value-display">
+                <h3>{% trans 'Set Members' %} ({{ key_data.size }} {% trans 'items' %})</h3>
+                {% if key_data.value %}
+                <table class="key-value-table">
+                    <thead>
+                        <tr>
+                            <th>{% trans 'Member' %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for member in key_data.value %}
+                        <tr>
+                            <td><code>{{ member }}</code></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="quiet">{% trans 'Set is empty' %}</p>
+                {% endif %}
+                <div class="help">
+                    {% trans 'Set editing is not supported in this interface. Use Redis CLI or other tools for complex set operations.' %}
+                </div>
+            </div>
+            
+            {% elif key_data.type == "zset" %}
+            <!-- Sorted Set display -->
+            <div class="key-value-display">
+                <h3>{% trans 'Sorted Set Members' %} ({{ key_data.size }} {% trans 'items' %})</h3>
+                {% if key_data.value %}
+                <table class="key-value-table">
+                    <thead>
+                        <tr>
+                            <th>{% trans 'Member' %}</th>
+                            <th>{% trans 'Score' %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for member, score in key_data.value %}
+                        <tr>
+                            <td><code>{{ member }}</code></td>
+                            <td><code>{{ score }}</code></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="quiet">{% trans 'Sorted set is empty' %}</p>
+                {% endif %}
+                <div class="help">
+                    {% trans 'Sorted set editing is not supported in this interface. Use Redis CLI or other tools for complex sorted set operations.' %}
+                </div>
+            </div>
+            
+            {% elif key_data.type == "hash" %}
+            <!-- Hash display -->
+            <div class="key-value-display">
+                <h3>{% trans 'Hash Fields' %} ({{ key_data.size }} {% trans 'fields' %})</h3>
+                {% if key_data.value %}
+                <table class="key-value-table">
+                    <thead>
+                        <tr>
+                            <th>{% trans 'Field' %}</th>
+                            <th>{% trans 'Value' %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for field, value in key_data.value.items %}
+                        <tr>
+                            <td><code>{{ field }}</code></td>
+                            <td><code>{{ value }}</code></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="quiet">{% trans 'Hash is empty' %}</p>
+                {% endif %}
+                <div class="help">
+                    {% trans 'Hash editing is not supported in this interface. Use Redis CLI or other tools for complex hash operations.' %}
+                </div>
+            </div>
+            
+            {% else %}
+            <div class="key-value-display">
+                <p class="quiet">{% trans 'Unsupported key type for display:' %} {{ key_data.type }}</p>
+            </div>
+            {% endif %}
+        </fieldset>
+
+        <!-- Danger Zone -->
+        <fieldset class="module aligned danger-zone">
+            <h2>{% trans 'Danger Zone' %}</h2>
+            <div class="form-row">
+                <div class="field-box">
+                    <form method="post" class="delete-form" onsubmit="return confirm('{% trans 'Are you sure you want to delete this key? This action cannot be undone.' %}');">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="delete_key">
+                        <input type="submit" value="{% trans 'Delete Key' %}" class="deletelink">
+                    </form>
+                    <div class="help">
+                        {% trans 'Permanently delete this key from Redis. This action cannot be undone.' %}
+                    </div>
+                </div>
+            </div>
+        </fieldset>
+    </div>
+    {% endif %}
+
+    <!-- Navigation -->
+    <div class="module" style="margin-top: 20px;">
+        <p>
+            <a href="{% url 'dj_redis_panel:key_search' instance_alias db_number %}" class="button">
+                ← {% trans 'Back to Key Search' %}
+            </a>
+            <span style="margin: 0 10px;">|</span>
+            <a href="{% url 'dj_redis_panel:instance_overview' instance_alias %}" class="button">
+                {% trans 'Instance Overview' %}
+            </a>
+            <span style="margin: 0 10px;">|</span>
+            <a href="{% url 'dj_redis_panel:index' %}" class="button">
+                {% trans 'All Instances' %}
+            </a>
+        </p>
+    </div>
+</div>
+
+<style>
+.key-type-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: bold;
+    color: white;
+}
+
+.key-type-string { background-color: #28a745; }
+.key-type-list { background-color: #007bff; }
+.key-type-set { background-color: #ffc107; color: #000; }
+.key-type-zset { background-color: #17a2b8; }
+.key-type-hash { background-color: #6f42c1; }
+
+.key-value-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0;
+}
+
+.key-value-table th,
+.key-value-table td {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color, #ddd);
+    text-align: left;
+}
+
+.key-value-table th {
+    font-weight: bold;
+    background-color: var(--darkened-bg, rgba(0,0,0,0.05));
+}
+
+.key-value-table tbody tr:nth-child(even) {
+    background-color: var(--darkened-bg, rgba(0,0,0,0.02));
+}
+
+.key-value-table code {
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 12px;
+    background-color: var(--darkened-bg, rgba(0,0,0,0.05));
+}
+
+.readonly {
+    padding: 8px 0;
+}
+
+.readonly code {
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 13px;
+    background-color: var(--darkened-bg, rgba(0,0,0,0.05));
+}
+
+.danger-zone {
+    border: 2px solid #dc3545;
+    border-radius: 4px;
+    background-color: var(--error-bg, rgba(220, 53, 69, 0.1));
+}
+
+.danger-zone h2 {
+    color: #dc3545;
+}
+
+.field-box {
+    margin-bottom: 15px;
+}
+
+.submit-row {
+    margin-top: 10px;
+}
+
+.key-value-display h3 {
+    margin: 0 0 15px 0;
+    opacity: 0.8;
+}
+
+.messagelist {
+    margin: 0 0 20px 0;
+}
+
+.messagelist .success,
+.messagelist .error {
+    padding: 10px 15px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    border: 1px solid;
+}
+
+.messagelist .success {
+    background-color: var(--message-success-bg, #d4edda);
+    color: var(--message-success-fg, #155724);
+    border-color: var(--message-success-border, #c3e6cb);
+}
+
+.messagelist .error {
+    background-color: var(--message-error-bg, #f8d7da);
+    color: var(--message-error-fg, #721c24);
+    border-color: var(--message-error-border, #f5c6cb);
+}
+</style>
+{% endblock %}

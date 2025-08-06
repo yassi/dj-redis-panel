@@ -1,0 +1,176 @@
+{% extends "admin/dj_redis_panel/base.html" %}
+{% load i18n admin_urls static %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+    &rsaquo; <a href="{% url 'dj_redis_panel:index' %}">{% trans 'Redis Instances' %}</a>
+    &rsaquo; {{ instance_alias }}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="module">
+    <!-- Instance Information -->
+    <div class="module">
+        <h2>{{ instance_alias }} - {% trans 'Instance Overview' %}</h2>
+        <p class="help">{{ instance_config.description }}</p>
+        
+        {% if error_message %}
+        <div class="errors">
+            <p><strong>{% trans 'Connection Error:' %}</strong> {{ error_message }}</p>
+        </div>
+        {% elif instance_info %}
+        <div class="instance-stats">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <strong>{% trans 'Redis Version' %}</strong><br>
+                    <span class="stat-value">{{ instance_info.version }}</span>
+                </div>
+                <div class="stat-item">
+                    <strong>{% trans 'Memory Used' %}</strong><br>
+                    <span class="stat-value">{{ instance_info.memory_used }}</span>
+                </div>
+                <div class="stat-item">
+                    <strong>{% trans 'Peak Memory' %}</strong><br>
+                    <span class="stat-value">{{ instance_info.memory_peak }}</span>
+                </div>
+                <div class="stat-item">
+                    <strong>{% trans 'Connected Clients' %}</strong><br>
+                    <span class="stat-value">{{ instance_info.connected_clients }}</span>
+                </div>
+                <div class="stat-item">
+                    <strong>{% trans 'Uptime' %}</strong><br>
+                    <span class="stat-value">{{ instance_info.uptime|floatformat:0 }}s</span>
+                </div>
+                <div class="stat-item">
+                    <strong>{% trans 'Commands Processed' %}</strong><br>
+                    <span class="stat-value">{{ instance_info.total_commands_processed|floatformat:0 }}</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Databases Overview -->
+    {% if databases and not error_message %}
+    <div class="results">
+        <h3>{% trans 'Databases' %}</h3>
+        <table id="result_list">
+            <thead>
+                <tr>
+                    <th scope="col">{% trans 'Database' %}</th>
+                    <th scope="col">{% trans 'Keys' %}</th>
+                    <th scope="col">{% trans 'Space (MB)' %}</th>
+                    <th scope="col">{% trans 'Expires' %}</th>
+                    <th scope="col">{% trans 'Actions' %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for db in databases %}
+                <tr class="{% cycle 'row1' 'row2' %}">
+                    <td>
+                        <strong>DB {{ db.db_number }}</strong>
+                        {% if db.is_default %}
+                            <span class="default-badge">{% trans 'default' %}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if db.key_count > 0 %}
+                            <strong>{{ db.key_count|floatformat:0 }}</strong>
+                        {% else %}
+                            <span class="quiet">{% trans 'Empty' %}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if db.space_mb > 0 %}
+                            <span class="space-usage">
+                                {% if db.space_mb >= 1 %}
+                                    {{ db.space_mb|floatformat:1 }} MB
+                                {% elif db.space_kb >= 1 %}
+                                    {{ db.space_kb|floatformat:1 }} KB
+                                {% else %}
+                                    {{ db.space_bytes|floatformat:0 }} B
+                                {% endif %}
+                            </span>
+                        {% else %}
+                            <span class="quiet">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if db.expires > 0 %}
+                            {{ db.expires|floatformat:0 }}
+                        {% else %}
+                            <span class="quiet">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if db.key_count > 0 %}
+                            <a href="{% url 'dj_redis_panel:key_search' instance_alias db.db_number %}" class="default">
+                                {% trans 'Browse Keys' %}
+                            </a>
+                        {% else %}
+                            <span class="quiet">{% trans 'No keys' %}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Back to Instances -->
+    <div class="module" style="margin-top: 20px;">
+        <p>
+            <a href="{% url 'dj_redis_panel:index' %}" class="button">
+                ← {% trans 'Back to Redis Instances' %}
+            </a>
+        </p>
+    </div>
+</div>
+
+<style>
+#result_list {
+    width: 100%;
+}
+.instance-stats {
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border-color, #ddd);
+}
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+}
+.stat-item {
+    text-align: center;
+    padding: 10px;
+    border-radius: 3px;
+    border: 1px solid var(--border-color, #ddd);
+}
+.stat-value {
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--link-fg, #417690);
+}
+.default-badge {
+    background: var(--link-fg, #417690);
+    color: var(--body-bg, white);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    margin-left: 5px;
+}
+.space-usage {
+    font-weight: bold;
+}
+.space-usage:before {
+    content: "~";
+    margin-right: 2px;
+    opacity: 0.7;
+}
+</style>
+{% endblock %}

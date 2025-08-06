@@ -3,10 +3,6 @@
 
 {% block content %}
 <div class="module">
-    {% if user.is_authenticated %}
-        <p>{% blocktrans with user=user.get_full_name|default:user.username %}Welcome, {{ user }}.{% endblocktrans %}</p>
-    {% endif %}
-    
     {% if redis_instances %}
     <div class="results">
         <table id="result_list">
@@ -76,8 +72,8 @@
                     </td>
                     <td>
                         {% if instance.status == 'connected' %}
-                            <a href="{% url 'dj_redis_panel:key_search' instance.alias %}" class="default">
-                                {% trans 'Browse Keys' %}
+                            <a href="{% url 'dj_redis_panel:instance_overview' instance.alias %}" class="default">
+                                {% trans 'Browse Instance' %}
                             </a>
                         {% else %}
                             <span class="quiet">{% trans 'N/A' %}</span>
@@ -133,39 +129,7 @@
                 </fieldset>
             </div>
 
-            <div class="form-row">
-                <h3>{% trans 'Step 2: Configure Django CACHES Setting' %}</h3>
-                <div class="help-text">
-                    <p>{% trans 'Ensure your CACHES setting includes these Redis instances:' %}</p>
-                </div>
-                <fieldset class="collapse">
-                    <div class="form-row">
-                        <textarea readonly rows="18" class="vLargeTextField" style="font-family: monospace; width: 100%;">CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/0",
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        },
-    },
-    "sessions": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/1", 
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        },
-    },
-    "cache_db": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/2",
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        },
-    },
-}</textarea>
-                    </div>
-                </fieldset>
-            </div>
+            
 
             <div class="form-row">
                 <div class="help-text">
@@ -178,6 +142,9 @@
 </div>
 
 <style>
+#result_list {
+    width: 100%;
+}
 .icon-yes img, .icon-no img {
     width: 13px;
     height: 13px;
