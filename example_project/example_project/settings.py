@@ -133,5 +133,9 @@ DJ_REDIS_PANEL_SETTINGS = {
             "host": "127.0.0.1",
             "port": 6379,
         },
+        "local_redis_from_url": {
+            "description": "Local Redis Instance from URL",
+            "url": "redis://127.0.0.1:6379",
+        },
     }
 }

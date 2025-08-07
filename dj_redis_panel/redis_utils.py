@@ -52,6 +52,16 @@ class RedisPanelUtils:
             "decode_responses": True,  # Always decode for management operations
         }
 
+        if "url" in config:
+            if config["url"].startswith("rediss://"):
+                return redis.Redis.from_url(
+                    config["url"],
+                    ssl_cert_reqs=config.get("ssl_cert_reqs", None),
+                    decode_responses=True,
+                )
+            else:
+                return redis.Redis.from_url(config["url"], decode_responses=True)
+
         # Optional connection parameters
         if "password" in config:
             connection_params["password"] = config["password"]
