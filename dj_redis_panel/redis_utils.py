@@ -1,6 +1,6 @@
 import redis
 from django.conf import settings
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 
 REDIS_PANEL_SETTINGS_NAME = "DJ_REDIS_PANEL_SETTINGS"
@@ -74,30 +74,46 @@ class RedisPanelUtils:
     def get_instance_meta_data(cls, instance_alias: str) -> Dict[str, Any]:
         """
         Ping a redis instance and return meta data about the instance.
+        Includes parsed database information for the instance overview.
         """
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
             redis_conn.ping()
             info = redis_conn.info()
-
-            # Get total keys across all databases more efficiently
             total_keys = 0
-            current_db = redis_conn.connection_pool.connection_kwargs.get("db", 0)
+            databases = []
 
-            for db in range(16):  # Redis default is 16 databases
-                try:
-                    redis_conn.select(db)
-                    total_keys += redis_conn.dbsize()
-                except:
-                    break  # Stop if database doesn't exist
+            # Get all databases, their key counts and other info
+            for db_num in range(16):
+                db_key = f"db{db_num}"
+                if db_key in info:
+                    db_info = info[db_key]
+                    key_count = db_info.get("keys", 0)
+                    total_keys += key_count
+                    if key_count > 0 or db_num == 0:
+                        databases.append(
+                            {
+                                "db_number": db_num,
+                                "is_default": db_num == 0,
+                                **db_info,
+                            }
+                        )
 
-            # Reset to original database
-            redis_conn.select(current_db)
+            hero_numbers = {
+                "version": info.get("redis_version", "Unknown"),
+                "memory_used": info.get("used_memory_human", "Unknown"),
+                "memory_peak": info.get("used_memory_peak_human", "Unknown"),
+                "connected_clients": info.get("connected_clients", 0),
+                "uptime": info.get("uptime_in_seconds", 0),
+                "total_commands_processed": info.get("total_commands_processed", 0),
+            }
 
             return {
                 "status": "connected",
                 "info": info,
                 "total_keys": total_keys,
+                "hero_numbers": hero_numbers,
+                "databases": databases,
                 "error": None,
             }
         except Exception as e:
@@ -105,5 +121,7 @@ class RedisPanelUtils:
                 "status": "disconnected",
                 "info": None,
                 "total_keys": 0,
+                "hero_numbers": None,
+                "databases": [],
                 "error": str(e),
             }

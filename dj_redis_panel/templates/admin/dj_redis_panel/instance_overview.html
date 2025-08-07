@@ -20,32 +20,32 @@
         <div class="errors">
             <p><strong>{% trans 'Connection Error:' %}</strong> {{ error_message }}</p>
         </div>
-        {% elif instance_info %}
+        {% elif hero_numbers %}
         <div class="instance-stats">
             <div class="stats-grid">
                 <div class="stat-item">
                     <strong>{% trans 'Redis Version' %}</strong><br>
-                    <span class="stat-value">{{ instance_info.version }}</span>
+                    <span class="stat-value">{{ hero_numbers.version }}</span>
                 </div>
                 <div class="stat-item">
                     <strong>{% trans 'Memory Used' %}</strong><br>
-                    <span class="stat-value">{{ instance_info.memory_used }}</span>
+                    <span class="stat-value">{{ hero_numbers.memory_used }}</span>
                 </div>
                 <div class="stat-item">
                     <strong>{% trans 'Peak Memory' %}</strong><br>
-                    <span class="stat-value">{{ instance_info.memory_peak }}</span>
+                    <span class="stat-value">{{ hero_numbers.memory_peak }}</span>
                 </div>
                 <div class="stat-item">
                     <strong>{% trans 'Connected Clients' %}</strong><br>
-                    <span class="stat-value">{{ instance_info.connected_clients }}</span>
+                    <span class="stat-value">{{ hero_numbers.connected_clients }}</span>
                 </div>
                 <div class="stat-item">
                     <strong>{% trans 'Uptime' %}</strong><br>
-                    <span class="stat-value">{{ instance_info.uptime|floatformat:0 }}s</span>
+                    <span class="stat-value">{{ hero_numbers.uptime|floatformat:0 }}s</span>
                 </div>
                 <div class="stat-item">
                     <strong>{% trans 'Commands Processed' %}</strong><br>
-                    <span class="stat-value">{{ instance_info.total_commands_processed|floatformat:0 }}</span>
+                    <span class="stat-value">{{ hero_numbers.total_commands_processed|floatformat:0 }}</span>
                 </div>
             </div>
         </div>
@@ -61,7 +61,7 @@
                 <tr>
                     <th scope="col">{% trans 'Database' %}</th>
                     <th scope="col">{% trans 'Keys' %}</th>
-                    <th scope="col">{% trans 'Space (MB)' %}</th>
+                    <th scope="col">{% trans 'Avg TTL (s)' %}</th>
                     <th scope="col">{% trans 'Expires' %}</th>
                     <th scope="col">{% trans 'Actions' %}</th>
                 </tr>
@@ -76,23 +76,15 @@
                         {% endif %}
                     </td>
                     <td>
-                        {% if db.key_count > 0 %}
-                            <strong>{{ db.key_count|floatformat:0 }}</strong>
+                        {% if db.keys > 0 %}
+                            <strong>{{ db.keys|floatformat:0 }}</strong>
                         {% else %}
                             <span class="quiet">{% trans 'Empty' %}</span>
                         {% endif %}
                     </td>
                     <td>
-                        {% if db.space_mb > 0 %}
-                            <span class="space-usage">
-                                {% if db.space_mb >= 1 %}
-                                    {{ db.space_mb|floatformat:1 }} MB
-                                {% elif db.space_kb >= 1 %}
-                                    {{ db.space_kb|floatformat:1 }} KB
-                                {% else %}
-                                    {{ db.space_bytes|floatformat:0 }} B
-                                {% endif %}
-                            </span>
+                        {% if db.avg_ttl > 0 %}
+                            <span>{{ db.avg_ttl|floatformat:0 }}s</span>
                         {% else %}
                             <span class="quiet">—</span>
                         {% endif %}
@@ -105,7 +97,7 @@
                         {% endif %}
                     </td>
                     <td>
-                        {% if db.key_count > 0 %}
+                        {% if db.keys > 0 %}
                             <a href="{% url 'dj_redis_panel:key_search' instance_alias db.db_number %}" class="default">
                                 {% trans 'Browse Keys' %}
                             </a>
@@ -120,14 +112,6 @@
     </div>
     {% endif %}
 
-    <!-- Back to Instances -->
-    <div class="module" style="margin-top: 20px;">
-        <p>
-            <a href="{% url 'dj_redis_panel:index' %}" class="button">
-                ← {% trans 'Back to Redis Instances' %}
-            </a>
-        </p>
-    </div>
 </div>
 
 <style>
@@ -164,13 +148,9 @@
     font-size: 10px;
     margin-left: 5px;
 }
-.space-usage {
+.ttl-value {
     font-weight: bold;
-}
-.space-usage:before {
-    content: "~";
-    margin-right: 2px;
-    opacity: 0.7;
+    color: var(--link-fg, #417690);
 }
 </style>
 {% endblock %}
