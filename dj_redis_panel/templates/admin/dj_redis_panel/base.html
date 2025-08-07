@@ -3,6 +3,12 @@
 
 {% block title %}{{ title }} | DJ Redis Panel{% endblock %}
 
+{% block extrahead %}
+<style type="text/css">
+    {% include "admin/dj_redis_panel/styles.css" %}
+</style>
+{% endblock %}
+
 {% block branding %}
 <h1 id="site-name"><a href="{% url 'dj_redis_panel:index' %}">DJ Redis Panel</a></h1>
 {% endblock %}
