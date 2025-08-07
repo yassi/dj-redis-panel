@@ -261,23 +261,6 @@
         </fieldset>
     </div>
     {% endif %}
-
-    <!-- Navigation -->
-    <div class="module" style="margin-top: 20px;">
-        <p>
-            <a href="{% url 'dj_redis_panel:key_search' instance_alias db_number %}" class="button">
-                ← {% trans 'Back to Key Search' %}
-            </a>
-            <span style="margin: 0 10px;">|</span>
-            <a href="{% url 'dj_redis_panel:instance_overview' instance_alias %}" class="button">
-                {% trans 'Instance Overview' %}
-            </a>
-            <span style="margin: 0 10px;">|</span>
-            <a href="{% url 'dj_redis_panel:index' %}" class="button">
-                {% trans 'All Instances' %}
-            </a>
-        </p>
-    </div>
 </div>
 
 <style>

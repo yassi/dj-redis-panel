@@ -113,10 +113,6 @@
                         <a href="{% url 'dj_redis_panel:key_detail' instance_alias selected_db key_info.key %}" class="viewlink">
                             {% trans 'View' %}
                         </a>
-                        <span class="quiet"> | </span>
-                        <a href="{% url 'dj_redis_panel:key_detail' instance_alias selected_db key_info.key %}" class="deletelink">
-                            {% trans 'Delete' %}
-                        </a>
                     </td>
                 </tr>
                 {% endfor %}
@@ -124,19 +120,6 @@
         </table>
     </div>
     {% endif %}
-
-    <!-- Back Navigation -->
-    <div class="module" style="margin-top: 20px;">
-        <p>
-            <a href="{% url 'dj_redis_panel:instance_overview' instance_alias %}" class="button">
-                ← {% trans 'Back to Instance Overview' %}
-            </a>
-            <span style="margin: 0 10px;">|</span>
-            <a href="{% url 'dj_redis_panel:index' %}" class="button">
-                {% trans 'All Instances' %}
-            </a>
-        </p>
-    </div>
 </div>
 
 <style>
