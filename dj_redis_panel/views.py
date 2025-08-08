@@ -156,7 +156,7 @@ def key_search(request, instance_alias, db_number):
         }
 
     context = {
-        "title": f"Redis Keys - {instance_alias} DB {selected_db}",
+        "title": f"{instance_alias}::DB{selected_db}::Key Search",
         "opts": None,
         "has_permission": True,
         "site_title": admin.site.site_title,

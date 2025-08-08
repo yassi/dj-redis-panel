@@ -28,7 +28,8 @@
     
     <!-- Search Form -->
     <div class="module">
-        <h2>{% trans 'Search Redis Keys' %} - {{ instance_alias }} DB {{ selected_db }}</h2>
+        <h2>{% trans 'Search Redis Keys' %}</h2>
+        <br>
         <form method="get" class="search-form">
             <div class="form-row search-form-row">
                 <div class="search-form-fields">
@@ -70,6 +71,8 @@
     <!-- Results Summary -->
     {% if not error_message %}
     <div class="module">
+        <h2>{% trans 'Search Results' %}</h2>
+        <br>
         <p class="help">
             {% if total_keys > 0 %}
                 {% blocktrans with total=total_keys start=start_index end=end_index %}Found {{ total }} keys, showing {{ start }} to {{ end }}{% endblocktrans %}
