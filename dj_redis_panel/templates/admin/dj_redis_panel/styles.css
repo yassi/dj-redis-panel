@@ -48,10 +48,11 @@
 /* ===== INSTANCE OVERVIEW STYLES ===== */
 
 .instance-stats {
-    padding: 15px;
+    padding-top: 15px;
+    padding-bottom: 15px;
     border-radius: 4px;
     margin-bottom: 20px;
-    border: 1px solid var(--border-color, #ddd);
+    margin-top: 10px;
 }
 
 .stats-grid {

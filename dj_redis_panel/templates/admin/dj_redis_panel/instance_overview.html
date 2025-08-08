@@ -13,9 +13,7 @@
 <div class="module">
     <!-- Instance Information -->
     <div class="module">
-        <h2>{{ instance_alias }} - {% trans 'Instance Overview' %}</h2>
-        <p class="help">{{ instance_config.description }}</p>
-        
+        <h2>{% trans 'System Information' %}</h2>
         {% if error_message %}
         <div class="errors">
             <p><strong>{% trans 'Connection Error:' %}</strong> {{ error_message }}</p>
@@ -54,62 +52,67 @@
 
     <!-- Databases Overview -->
     {% if databases and not error_message %}
-    <div class="results">
-        <h3>{% trans 'Databases' %}</h3>
-        <table id="result_list">
-            <thead>
-                <tr>
-                    <th scope="col">{% trans 'Database' %}</th>
-                    <th scope="col">{% trans 'Keys' %}</th>
-                    <th scope="col">{% trans 'Avg TTL (s)' %}</th>
-                    <th scope="col">{% trans 'Expires' %}</th>
-                    <th scope="col">{% trans 'Actions' %}</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for db in databases %}
-                <tr class="{% cycle 'row1' 'row2' %}">
-                    <td>
-                        <strong>DB {{ db.db_number }}</strong>
-                        {% if db.is_default %}
-                            <span class="default-badge">{% trans 'default' %}</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if db.keys > 0 %}
-                            <strong>{{ db.keys|floatformat:0 }}</strong>
-                        {% else %}
-                            <span class="quiet">{% trans 'Empty' %}</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if db.avg_ttl > 0 %}
-                            <span>{{ db.avg_ttl|floatformat:0 }}s</span>
-                        {% else %}
-                            <span class="quiet">—</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if db.expires > 0 %}
-                            {{ db.expires|floatformat:0 }}
-                        {% else %}
-                            <span class="quiet">—</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if db.keys > 0 %}
-                            <a href="{% url 'dj_redis_panel:key_search' instance_alias db.db_number %}" class="default">
-                                {% trans 'Browse Keys' %}
-                            </a>
-                        {% else %}
-                            <span class="quiet">{% trans 'No keys' %}</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+
+    <div class="module">
+        <h2>{% trans 'Databases' %}</h2>
+        <br>
+        <div class="results">
+            <table id="result_list">
+                <thead>
+                    <tr>
+                        <th scope="col">{% trans 'DB Name' %}</th>
+                        <th scope="col">{% trans 'Keys' %}</th>
+                        <th scope="col">{% trans 'Avg TTL (s)' %}</th>
+                        <th scope="col">{% trans 'Expires' %}</th>
+                        <th scope="col">{% trans 'Actions' %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for db in databases %}
+                    <tr class="{% cycle 'row1' 'row2' %}">
+                        <td>
+                            <strong>DB {{ db.db_number }}</strong>
+                            {% if db.is_default %}
+                                <span class="default-badge">{% trans 'default' %}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if db.keys > 0 %}
+                                <strong>{{ db.keys|floatformat:0 }}</strong>
+                            {% else %}
+                                <span class="quiet">{% trans 'Empty' %}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if db.avg_ttl > 0 %}
+                                <span>{{ db.avg_ttl|floatformat:0 }}s</span>
+                            {% else %}
+                                <span class="quiet">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if db.expires > 0 %}
+                                {{ db.expires|floatformat:0 }}
+                            {% else %}
+                                <span class="quiet">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if db.keys > 0 %}
+                                <a href="{% url 'dj_redis_panel:key_search' instance_alias db.db_number %}" class="default">
+                                    {% trans 'Browse Keys' %}
+                                </a>
+                            {% else %}
+                                <span class="quiet">{% trans 'No keys' %}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
+
     {% endif %}
 
 </div>

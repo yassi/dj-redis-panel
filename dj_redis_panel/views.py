@@ -80,7 +80,7 @@ def instance_overview(request, instance_alias):
     meta_data = RedisPanelUtils.get_instance_meta_data(instance_alias)
 
     context = {
-        "title": f"Redis Instance - {instance_alias}",
+        "title": f"Instance Overview: {instance_alias}",
         "opts": None,
         "has_permission": True,
         "site_title": admin.site.site_title,
