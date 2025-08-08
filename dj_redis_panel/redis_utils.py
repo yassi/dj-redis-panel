@@ -135,3 +135,115 @@ class RedisPanelUtils:
                 "databases": [],
                 "error": str(e),
             }
+    
+
+
+    @classmethod
+    def paginated_scan(
+        cls, 
+        instance_alias: str, 
+        db_number: int, 
+        pattern: str = "*", 
+        page: int = 1, 
+        per_page: int = 25,
+        scan_count: int = 100
+    ) -> Dict[str, Any]:
+        """
+        Perform a paginated SCAN operation on Redis keys.
+        
+        Scans all matching keys first, then applies pagination.
+        This ensures accurate pagination information and total counts.
+        """
+        try:
+            redis_conn = cls.get_redis_connection(instance_alias)
+            redis_conn.select(db_number)
+            
+            # Scan all matching keys
+            cursor = 0
+            all_keys = []
+            scan_iterations = 0
+            max_scan_iterations = 2000  # Prevent infinite loops
+            
+            while scan_iterations < max_scan_iterations:
+                cursor, partial_keys = redis_conn.scan(
+                    cursor=cursor, match=pattern, count=scan_count
+                )
+                all_keys.extend(partial_keys)
+                scan_iterations += 1
+                
+                if cursor == 0:  # Scan complete
+                    break
+                    
+                # Safety limit to prevent memory issues with very large datasets
+                if len(all_keys) >= 100000:
+                    break
+            
+            # Sort keys for consistent pagination
+            all_keys.sort()
+            
+            total_keys = len(all_keys)
+            total_pages = (total_keys + per_page - 1) // per_page if total_keys > 0 else 1
+            
+            # Calculate pagination bounds
+            start_index = (page - 1) * per_page
+            end_index = start_index + per_page
+            page_keys = all_keys[start_index:end_index]
+            
+            # Get detailed information for each key on this page
+            keys_with_details = []
+            for key in page_keys:
+                try:
+                    key_str = str(key)
+                    key_type = redis_conn.type(key)
+                    ttl = redis_conn.ttl(key)
+                    
+                    # Get size/length based on type
+                    size = 0
+                    if key_type == "string":
+                        value = redis_conn.get(key) or ""
+                        size = len(str(value).encode("utf-8"))
+                    elif key_type == "list":
+                        size = redis_conn.llen(key)
+                    elif key_type == "set":
+                        size = redis_conn.scard(key)
+                    elif key_type == "zset":
+                        size = redis_conn.zcard(key)
+                    elif key_type == "hash":
+                        size = redis_conn.hlen(key)
+                    
+                    keys_with_details.append({
+                        "key": key_str,
+                        "type": key_type,
+                        "ttl": ttl if ttl > 0 else None,
+                        "size": size,
+                    })
+                except Exception:
+                    # Skip keys that can't be processed
+                    continue
+            
+            return {
+                "keys": [str(key) for key in page_keys],
+                "keys_with_details": keys_with_details,
+                "total_keys": total_keys,
+                "page": page,
+                "per_page": per_page,
+                "total_pages": total_pages,
+                "has_more": page < total_pages,
+                "scan_complete": cursor == 0,
+                "limited_scan": len(all_keys) >= 100000,
+                "error": None
+            }
+            
+        except Exception as e:
+            return {
+                "keys": [],
+                "keys_with_details": [],
+                "total_keys": 0,
+                "page": page,
+                "per_page": per_page,
+                "total_pages": 0,
+                "has_more": False,
+                "scan_complete": False,
+                "limited_scan": False,
+                "error": str(e)
+            }

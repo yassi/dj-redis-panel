@@ -7,6 +7,31 @@ from .redis_utils import RedisPanelUtils
 
 # Create your views here.
 
+def _get_page_range(current_page, total_pages):
+    """
+    Generate a smart page range for pagination display
+    for example:
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    [1, "...", 4, 5, 6, 7, 8, 9, 10, "...", 100]
+    [1, "...", 4, 5, 6, 7, 8, 9, 10, "...", 100]
+    """
+    if total_pages <= 10:
+        return list(range(1, total_pages + 1))
+    
+    # For larger page counts, show pages around current page
+    start = max(1, current_page - 5)
+    end = min(total_pages + 1, current_page + 6)
+    
+    pages = list(range(start, end))
+    
+    # Always include first and last pages
+    if 1 not in pages:
+        pages = [1, "..."] + pages
+    if total_pages not in pages:
+        pages = pages + ["...", total_pages]
+    
+    return pages
+
 
 @staff_member_required
 def index(request):
@@ -82,74 +107,53 @@ def key_search(request, instance_alias, db_number):
 
     instance_config = instances[instance_alias]
     search_query = request.GET.get("q", "*")
+    page = request.GET.get('page', 1)
+    per_page = int(request.GET.get('per_page', 25))
     selected_db = int(db_number)  # Use the URL parameter instead of GET parameter
+    
+    # no need to support weird values for pagination, just allow our presets
+    if per_page not in [10, 25, 50, 100]:
+        per_page = 25
 
     # Check for success messages
     success_message = None
     if request.GET.get("deleted") == "1":
         success_message = "Key deleted successfully"
 
-    # Get connection and search keys
-    keys_data = []
-    total_keys = 0
-    error_message = None
-
     try:
-        redis_conn = RedisPanelUtils.get_redis_connection(instance_alias)
-        redis_conn.select(selected_db)
-
-        # Use SCAN for better performance than KEYS
-        cursor = 0
-        keys = []
-        while True:
-            cursor, partial_keys = redis_conn.scan(
-                cursor=cursor, match=search_query, count=100
-            )
-            keys.extend(partial_keys)
-            if cursor == 0:
-                break
-            # Limit results to prevent overwhelming the browser
-            if len(keys) >= 1000:
-                break
-
-        total_keys = len(keys)
-
-        # Get detailed information for each key
-        for key in keys[:100]:  # Limit displayed keys
-            try:
-                # Since decode_responses=True, keys are already strings
-                key_str = str(key)
-                key_type = redis_conn.type(key)  # Already decoded
-                ttl = redis_conn.ttl(key)
-
-                # Get size/length based on type
-                size = 0
-                if key_type == "string":
-                    value = redis_conn.get(key) or ""
-                    size = len(str(value).encode("utf-8"))  # Get byte size
-                elif key_type == "list":
-                    size = redis_conn.llen(key)
-                elif key_type == "set":
-                    size = redis_conn.scard(key)
-                elif key_type == "zset":
-                    size = redis_conn.zcard(key)
-                elif key_type == "hash":
-                    size = redis_conn.hlen(key)
-
-                keys_data.append(
-                    {
-                        "key": key_str,
-                        "type": key_type,
-                        "ttl": ttl if ttl > 0 else None,
-                        "size": size,
-                    }
-                )
-            except Exception:
-                # Skip keys that can't be processed
-                continue
-
+        try:
+            page_num = int(page)
+        except (ValueError, TypeError):
+            page_num = 1
+            
+        scan_result = RedisPanelUtils.paginated_scan(
+            instance_alias=instance_alias,
+            db_number=selected_db,
+            pattern=search_query,
+            page=page_num,
+            per_page=per_page
+        )
+        
+        if scan_result["error"]:
+            error_message = scan_result["error"]
+            keys_data = []
+            total_keys = 0
+            page_obj = None
+        else:
+            keys_data = scan_result["keys_with_details"]
+            total_keys = scan_result["total_keys"]  # Now we have accurate total counts
+            error_message = None
+            
     except Exception as e:
         error_message = str(e)
+        keys_data = []
+        total_keys = 0
+        scan_result = {
+            "page": 1,
+            "per_page": per_page,
+            "total_pages": 0,
+            "has_more": False
+        }
 
     context = {
         "title": f"Redis Keys - {instance_alias} DB {selected_db}",
@@ -168,6 +172,16 @@ def key_search(request, instance_alias, db_number):
         "showing_keys": len(keys_data),
         "error_message": error_message,
         "success_message": success_message,
+        "per_page": per_page,
+        "current_page": scan_result["page"],
+        "total_pages": scan_result["total_pages"],
+        "has_previous": scan_result["page"] > 1,
+        "has_next": scan_result["has_more"],
+        "previous_page": scan_result["page"] - 1 if scan_result["page"] > 1 else None,
+        "next_page": scan_result["page"] + 1 if scan_result["has_more"] else None,
+        "start_index": (scan_result["page"] - 1) * scan_result["per_page"] + 1,
+        "end_index": min((scan_result["page"] - 1) * scan_result["per_page"] + len(keys_data), total_keys),
+        "page_range": _get_page_range(scan_result["page"], scan_result["total_pages"]),
     }
     return render(request, "admin/dj_redis_panel/key_search.html", context)
 

@@ -30,17 +30,29 @@
     <div class="module">
         <h2>{% trans 'Search Redis Keys' %} - {{ instance_alias }} DB {{ selected_db }}</h2>
         <form method="get" class="search-form">
-            <div class="form-row">
-                <div style="display: flex; gap: 10px; align-items: end;">
-                    <div>
+            <div class="form-row search-form-row">
+                <div class="search-form-fields">
+                    <div class="search-field-group">
                         <label for="q">{% trans 'Key Pattern:' %}</label>
                         <input type="text" id="q" name="q" value="{{ search_query }}" 
                                placeholder="*" class="vTextField" style="width: 300px;">
-                        <div class="help">{% trans 'Use * for wildcards, e.g., user:* or *:cache' %}</div>
                     </div>
-                    <div>
+                    <div class="search-field-group">
+                        <label for="per_page">{% trans 'Per page:' %}</label>
+                        <select id="per_page" name="per_page" class="vTextField">
+                            <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+                            <option value="25" {% if per_page == 25 %}selected{% endif %}>25</option>
+                            <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                            <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+                        </select>
+                    </div>
+                    <div class="search-field-group">
+                        <label>&nbsp;</label> <!-- Empty label for alignment -->
                         <input type="submit" value="{% trans 'Search' %}" class="default">
                     </div>
+                </div>
+                <div class="search-help">
+                    <div class="help">{% trans 'Use * for wildcards, e.g., user:* or *:cache' %}</div>
                 </div>
             </div>
         </form>
@@ -60,9 +72,9 @@
     <div class="module">
         <p class="help">
             {% if total_keys > 0 %}
-                {% blocktrans with total=total_keys showing=showing_keys %}Found {{ total }} keys, showing first {{ showing_keys }}{% endblocktrans %}
-                {% if total_keys > showing_keys %}
-                    <br><em>{% trans 'Refine your search pattern to see more specific results.' %}</em>
+                {% blocktrans with total=total_keys start=start_index end=end_index %}Found {{ total }} keys, showing {{ start }} to {{ end }}{% endblocktrans %}
+                {% if total_keys >= 100000 %}
+                    <br><em>{% trans 'Search limited to first 100,000 matching keys. Refine your search pattern for more specific results.' %}</em>
                 {% endif %}
             {% else %}
                 {% trans 'No keys found matching your search pattern.' %}
@@ -118,6 +130,30 @@
                 {% endfor %}
             </tbody>
         </table>
+        
+        <!-- Pagination using exact Django admin structure -->
+        <p class="paginator" align="right">
+        {% if total_pages > 1 %}
+            {% if has_previous %}
+                <a href="?{% if search_query != '*' %}q={{ search_query|urlencode }}&{% endif %}per_page={{ per_page }}&page={{ previous_page }}" class="prev">{% trans 'previous' %}</a>
+            {% endif %}
+            
+            {% for num in page_range %}
+                {% if num == "..." %}
+                    …
+                {% elif num == current_page %}
+                    <span class="this-page">{{ num }}</span>
+                {% else %}
+                    <a href="?{% if search_query != '*' %}q={{ search_query|urlencode }}&{% endif %}per_page={{ per_page }}&page={{ num }}">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+            
+            {% if has_next %}
+                <a href="?{% if search_query != '*' %}q={{ search_query|urlencode }}&{% endif %}per_page={{ per_page }}&page={{ next_page }}" class="next">{% trans 'next' %}</a>
+            {% endif %}
+        {% endif %}
+        {{ total_keys }} {% blocktrans count counter=total_keys %}key{% plural %}keys{% endblocktrans %}
+        </p>
     </div>
     {% endif %}
 </div>

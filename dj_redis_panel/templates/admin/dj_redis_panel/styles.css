@@ -4,7 +4,8 @@
 }
 
 /* Icon styles */
-.icon-yes img, .icon-no img {
+.icon-yes img,
+.icon-no img {
     width: 13px;
     height: 13px;
     margin-right: 4px;
@@ -130,19 +131,51 @@
 }
 
 /* Key type colors - consistent across templates */
-.key-type-string { background-color: #28a745; }
-.key-type-list { background-color: #007bff; }
-.key-type-set { background-color: #ffc107; color: #000; }
-.key-type-zset { background-color: #17a2b8; }
-.key-type-hash { background-color: #6f42c1; }
-.key-type-stream { background-color: #059669; }
+.key-type-string {
+    background-color: #28a745;
+}
+
+.key-type-list {
+    background-color: #007bff;
+}
+
+.key-type-set {
+    background-color: #ffc107;
+    color: #000;
+}
+
+.key-type-zset {
+    background-color: #17a2b8;
+}
+
+.key-type-hash {
+    background-color: #6f42c1;
+}
+
+.key-type-stream {
+    background-color: #059669;
+}
 
 /* Alternative key type colors used in search view */
-.key-search .key-type-string { background: #417690; }
-.key-search .key-type-list { background: #30a030; }
-.key-search .key-type-set { background: #e47911; }
-.key-search .key-type-zset { background: #7b68ee; }
-.key-search .key-type-hash { background: #dc2626; }
+.key-search .key-type-string {
+    background: #417690;
+}
+
+.key-search .key-type-list {
+    background: #30a030;
+}
+
+.key-search .key-type-set {
+    background: #e47911;
+}
+
+.key-search .key-type-zset {
+    background: #7b68ee;
+}
+
+.key-search .key-type-hash {
+    background: #dc2626;
+}
 
 /* ===== KEY DETAIL STYLES ===== */
 
@@ -161,11 +194,11 @@
 
 .key-value-table th {
     font-weight: bold;
-    background-color: var(--darkened-bg, rgba(0,0,0,0.05));
+    background-color: var(--darkened-bg, rgba(0, 0, 0, 0.05));
 }
 
 .key-value-table tbody tr:nth-child(even) {
-    background-color: var(--darkened-bg, rgba(0,0,0,0.02));
+    background-color: var(--darkened-bg, rgba(0, 0, 0, 0.02));
 }
 
 .key-value-table code {
@@ -173,7 +206,7 @@
     border-radius: 3px;
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
     font-size: 12px;
-    background-color: var(--darkened-bg, rgba(0,0,0,0.05));
+    background-color: var(--darkened-bg, rgba(0, 0, 0, 0.05));
 }
 
 .readonly {
@@ -185,7 +218,7 @@
     border-radius: 3px;
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
     font-size: 13px;
-    background-color: var(--darkened-bg, rgba(0,0,0,0.05));
+    background-color: var(--darkened-bg, rgba(0, 0, 0, 0.05));
 }
 
 .danger-zone {
@@ -209,4 +242,60 @@
 .key-value-display h3 {
     margin: 0 0 15px 0;
     opacity: 0.8;
+}
+
+/* Search Form Alignment Styles */
+.search-form-row {
+    margin-bottom: 15px;
+}
+
+.search-form-fields {
+    display: flex;
+    gap: 15px;
+    align-items: end;
+    margin-bottom: 5px;
+}
+
+.search-field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.search-field-group label {
+    font-weight: bold;
+    color: #666;
+    font-size: 11px;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+    white-space: nowrap;
+}
+
+.search-field-group input[type="text"],
+.search-field-group select {
+    height: 32px;
+    box-sizing: border-box;
+}
+
+.search-field-group select {
+    min-width: 80px;
+    padding: 6px 8px;
+}
+
+.search-field-group input[type="submit"] {
+    height: 32px;
+    padding: 6px 15px;
+    box-sizing: border-box;
+}
+
+.search-help {
+    margin-left: 0;
+    margin-top: 5px;
+}
+
+.search-help .help {
+    margin: 0;
+    color: #666;
+    font-size: 11px;
+    font-style: italic;
 }
