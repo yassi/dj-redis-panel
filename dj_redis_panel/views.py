@@ -198,6 +198,8 @@ def key_detail(request, instance_alias, db_number, key_name):
     success_message = None
     key_data = None
 
+    allow_key_delete = RedisPanelUtils.is_feature_enabled(instance_alias, "ALLOW_KEY_DELETE")
+
     try:
         redis_conn = RedisPanelUtils.get_redis_connection(instance_alias)
         redis_conn.select(db_number)
@@ -271,10 +273,6 @@ def key_detail(request, instance_alias, db_number, key_name):
                     error_message = "TTL must be a valid number"
 
             elif action == "delete_key":
-                # Check if key deletion is allowed
-                panel_settings = RedisPanelUtils.get_settings()
-                allow_key_delete = panel_settings.get("ALLOW_KEY_DELETE", False)
-                
                 if allow_key_delete:
                     redis_conn.delete(key_name)
                     return HttpResponseRedirect(
@@ -284,14 +282,10 @@ def key_detail(request, instance_alias, db_number, key_name):
                         + "?deleted=1"
                     )
                 else:
-                    error_message = "Key deletion is disabled in settings"
+                    error_message = "Key deletion is disabled for this instance"
 
     except Exception as e:
         error_message = str(e)
-
-    # Check if key deletion is allowed
-    panel_settings = RedisPanelUtils.get_settings()
-    allow_key_delete = panel_settings.get("ALLOW_KEY_DELETE", False)
 
     context = {
         "opts": None,

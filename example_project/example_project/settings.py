@@ -20,6 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
+# This is just an example project, it is fine to leave this here.
 SECRET_KEY = "django-insecure-&9%3k12n*0aub%5=fk29cnrw1=oy0@l6-=fu4b4_n=&^8yd5vq"
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -127,16 +128,22 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Django Redis Panel Configuration
 DJ_REDIS_PANEL_SETTINGS = {
-    "ALLOW_KEY_DELETE": True,
+    "ALLOW_KEY_DELETE": True, # Example of global feature
     "INSTANCES": {
         "local_redis": {
             "description": "Local Redis Instance",
             "host": "127.0.0.1",
             "port": 6379,
+            "features": { # Instance-specific features, default to globalif not found
+                "ALLOW_KEY_DELETE": True,
+            },
         },
         "local_redis_from_url": {
             "description": "Local Redis Instance from URL",
             "url": "redis://127.0.0.1:6379",
+            "features": {
+                "ALLOW_KEY_DELETE": False,
+            }
         },
     }
 }

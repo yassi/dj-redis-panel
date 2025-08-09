@@ -19,6 +19,33 @@ class RedisPanelUtils:
         return instances
 
     @classmethod
+    def is_feature_enabled(cls, instance_alias: str, feature_name: str) -> bool:
+        """
+        Check if a feature is enabled for a specific instance.
+        
+        Priority order:
+        1. Instance-specific feature setting
+        2. Global feature setting
+        3. Default False
+        """
+        instances = cls.get_instances()
+        panel_settings = cls.get_settings()
+        
+        # Check if instance exists
+        if instance_alias not in instances:
+            return False
+        
+        instance_config = instances[instance_alias]
+        
+        # Check instance-specific features first
+        instance_features = instance_config.get("features", {})
+        if feature_name in instance_features:
+            return bool(instance_features[feature_name])
+        
+        # Fall back to global setting
+        return bool(panel_settings.get(feature_name, False))
+
+    @classmethod
     def get_redis_connection(cls, instance_alias: str) -> redis.Redis:
         """
         Create a direct Redis connection for the specified instance.
