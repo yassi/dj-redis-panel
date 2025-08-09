@@ -12,7 +12,7 @@ urlpatterns = [
         name="key_search",
     ),
     path(
-        "<str:instance_alias>/db/<int:db_number>/key/<str:key_name>/",
+        "<str:instance_alias>/db/<int:db_number>/key/<path:key_name>",
         views.key_detail,
         name="key_detail",
     ),
