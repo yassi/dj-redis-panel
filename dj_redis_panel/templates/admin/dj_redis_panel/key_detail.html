@@ -94,6 +94,7 @@
         <fieldset class="module aligned">
             <h2>{% trans 'TTL Management' %}</h2>
             <br>
+            {% if allow_ttl_update %}
             <form method="post" class="ttl-form">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="update_ttl">
@@ -113,6 +114,23 @@
                     </div>
                 </div>
             </form>
+            {% else %}
+            <div class="form-row">
+                <div class="field-box">
+                    <label for="disabled_ttl">{% trans 'Set TTL (seconds):' %}</label>
+                    <input type="number" id="disabled_ttl" 
+                           value="{{ key_data.ttl|default:'' }}" 
+                           placeholder="{% trans 'Enter TTL' %}"
+                           class="vIntegerField" readonly disabled>
+                    <div class="help">
+                        {% trans 'TTL updates are disabled for this instance.' %}
+                    </div>
+                </div>
+                <div class="submit-row">
+                    <input type="button" value="{% trans 'TTL Update Disabled' %}" class="default" disabled>
+                </div>
+            </div>
+            {% endif %}
         </fieldset>
 
         <!-- Key Value Display and Editing -->

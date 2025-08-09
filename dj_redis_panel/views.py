@@ -200,6 +200,7 @@ def key_detail(request, instance_alias, db_number, key_name):
 
     allow_key_delete = RedisPanelUtils.is_feature_enabled(instance_alias, "ALLOW_KEY_DELETE")
     allow_key_edit = RedisPanelUtils.is_feature_enabled(instance_alias, "ALLOW_KEY_EDIT")
+    allow_ttl_update = RedisPanelUtils.is_feature_enabled(instance_alias, "ALLOW_TTL_UPDATE")
 
     try:
         redis_conn = RedisPanelUtils.get_redis_connection(instance_alias)
@@ -259,22 +260,25 @@ def key_detail(request, instance_alias, db_number, key_name):
                     error_message = "Key editing is disabled for this instance"
 
             elif action == "update_ttl":
-                new_ttl = request.POST.get("new_ttl", "")
-                try:
-                    if new_ttl.strip() == "" or new_ttl == "-1":
-                        redis_conn.persist(key_name)
-                        key_data["ttl"] = None
-                        success_message = "TTL removed (key will not expire)"
-                    else:
-                        ttl_seconds = int(new_ttl)
-                        if ttl_seconds > 0:
-                            redis_conn.expire(key_name, ttl_seconds)
-                            key_data["ttl"] = ttl_seconds
-                            success_message = f"TTL set to {ttl_seconds} seconds"
+                if allow_ttl_update:
+                    new_ttl = request.POST.get("new_ttl", "")
+                    try:
+                        if new_ttl.strip() == "" or new_ttl == "-1":
+                            redis_conn.persist(key_name)
+                            key_data["ttl"] = None
+                            success_message = "TTL removed (key will not expire)"
                         else:
-                            error_message = "TTL must be a positive number"
-                except ValueError:
-                    error_message = "TTL must be a valid number"
+                            ttl_seconds = int(new_ttl)
+                            if ttl_seconds > 0:
+                                redis_conn.expire(key_name, ttl_seconds)
+                                key_data["ttl"] = ttl_seconds
+                                success_message = f"TTL set to {ttl_seconds} seconds"
+                            else:
+                                error_message = "TTL must be a positive number"
+                    except ValueError:
+                        error_message = "TTL must be a valid number"
+                else:
+                    error_message = "TTL updates are disabled for this instance"
 
             elif action == "delete_key":
                 if allow_key_delete:
@@ -306,5 +310,6 @@ def key_detail(request, instance_alias, db_number, key_name):
         "success_message": success_message,
         "allow_key_delete": allow_key_delete,
         "allow_key_edit": allow_key_edit,
+        "allow_ttl_update": allow_ttl_update,
     }
     return render(request, "admin/dj_redis_panel/key_detail.html", context)
