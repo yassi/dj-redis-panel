@@ -129,6 +129,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Django Redis Panel Configuration
 DJ_REDIS_PANEL_SETTINGS = {
     "ALLOW_KEY_DELETE": True, # Example of global feature
+    "ALLOW_KEY_EDIT": True,
     "INSTANCES": {
         "local_redis": {
             "description": "Local Redis Instance",
@@ -136,6 +137,7 @@ DJ_REDIS_PANEL_SETTINGS = {
             "port": 6379,
             "features": { # Instance-specific features, default to globalif not found
                 "ALLOW_KEY_DELETE": True,
+                "ALLOW_KEY_EDIT": True,
             },
         },
         "local_redis_from_url": {
@@ -143,6 +145,7 @@ DJ_REDIS_PANEL_SETTINGS = {
             "url": "redis://127.0.0.1:6379",
             "features": {
                 "ALLOW_KEY_DELETE": False,
+                "ALLOW_KEY_EDIT": False,
             }
         },
     }

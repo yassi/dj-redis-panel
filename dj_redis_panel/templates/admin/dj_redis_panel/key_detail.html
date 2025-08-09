@@ -124,6 +124,7 @@
             <!-- String value editing -->
              <h3>{% trans 'String Value' %}</h3>
              <br>
+            {% if allow_key_edit %}
             <form method="post" class="value-form">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="update_value">
@@ -137,6 +138,17 @@
                     </div>
                 </div>
             </form>
+            {% else %}
+            <div class="form-row">
+                <div class="field-box">
+                    <textarea class="string-value-field" rows="5" readonly disabled>{{ key_data.value }}</textarea>
+                    <div class="help">{% trans 'Value editing is disabled for this instance.' %}</div>
+                </div>
+                <div class="submit-row">
+                    <input type="button" value="{% trans 'Value Edit Disabled' %}" class="default" disabled>
+                </div>
+            </div>
+            {% endif %}
             
             {% elif key_data.type == "list" %}
             <!-- List display -->

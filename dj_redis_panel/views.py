@@ -199,6 +199,7 @@ def key_detail(request, instance_alias, db_number, key_name):
     key_data = None
 
     allow_key_delete = RedisPanelUtils.is_feature_enabled(instance_alias, "ALLOW_KEY_DELETE")
+    allow_key_edit = RedisPanelUtils.is_feature_enabled(instance_alias, "ALLOW_KEY_EDIT")
 
     try:
         redis_conn = RedisPanelUtils.get_redis_connection(instance_alias)
@@ -245,14 +246,17 @@ def key_detail(request, instance_alias, db_number, key_name):
             action = request.POST.get("action")
 
             if action == "update_value":
-                new_value = request.POST.get("new_value", "")
+                if allow_key_edit:
+                    new_value = request.POST.get("new_value", "")
 
-                if key_type == "string":
-                    redis_conn.set(key_name, new_value)
-                    key_data["value"] = new_value
-                    success_message = "Key value updated successfully"
+                    if key_type == "string":
+                        redis_conn.set(key_name, new_value)
+                        key_data["value"] = new_value
+                        success_message = "Key value updated successfully"
+                    else:
+                        error_message = f"Direct editing not supported for {key_type} keys"
                 else:
-                    error_message = f"Direct editing not supported for {key_type} keys"
+                    error_message = "Key editing is disabled for this instance"
 
             elif action == "update_ttl":
                 new_ttl = request.POST.get("new_ttl", "")
@@ -301,5 +305,6 @@ def key_detail(request, instance_alias, db_number, key_name):
         "error_message": error_message,
         "success_message": success_message,
         "allow_key_delete": allow_key_delete,
+        "allow_key_edit": allow_key_edit,
     }
     return render(request, "admin/dj_redis_panel/key_detail.html", context)
