@@ -210,6 +210,11 @@
     background-color: var(--darkened-bg, rgba(0, 0, 0, 0.05));
 }
 
+.string-value-field {
+    width: 100%;
+    rows: 5;
+}
+
 .readonly {
     padding: 8px 0;
 }
@@ -243,6 +248,34 @@
 .key-value-display h3 {
     margin: 0 0 15px 0;
     opacity: 0.8;
+}
+
+/* Delete button styling to match Django admin */
+.delete-button {
+    background-color: #ba2121 !important;
+    color: white !important;
+    border-color: #ba2121 !important;
+}
+
+.delete-button:hover,
+.delete-button:focus {
+    background-color: #a41e1e !important;
+    border-color: #a41e1e !important;
+    color: white !important;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .delete-button {
+        background-color: #cc2936 !important;
+        border-color: #cc2936 !important;
+    }
+
+    .delete-button:hover,
+    .delete-button:focus {
+        background-color: #b02329 !important;
+        border-color: #b02329 !important;
+    }
 }
 
 /* Search Form Alignment Styles */

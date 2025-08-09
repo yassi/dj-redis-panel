@@ -27,11 +27,20 @@
 
     {% if key_data %}
     <div class="module">
-        <h2>{% trans 'Redis Key Details' %} - {{ instance_alias }} DB {{ db_number }}</h2>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h1 style="margin: 0;">KEY: {{ key_data.name }}</h1>
+            <form method="post" style="margin: 0;" onsubmit="return confirm('{% trans 'Are you sure you want to delete this key? This action cannot be undone.' %}');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete_key">
+                <input type="submit" value="{% trans 'Delete Key' %}" class="deletelink delete-button">
+            </form>
+        </div>
         
         <!-- Key Information -->
         <fieldset class="module aligned">
             <h2>{% trans 'Key Information' %}</h2>
+            <br>
             <div class="form-row">
                 <div class="field-box">
                     <label><strong>{% trans 'Key Name:' %}</strong></label>
@@ -80,6 +89,7 @@
         <!-- TTL Management -->
         <fieldset class="module aligned">
             <h2>{% trans 'TTL Management' %}</h2>
+            <br>
             <form method="post" class="ttl-form">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="update_ttl">
@@ -88,7 +98,7 @@
                         <label for="new_ttl">{% trans 'Set TTL (seconds):' %}</label>
                         <input type="number" id="new_ttl" name="new_ttl" 
                                value="{{ key_data.ttl|default:'' }}" 
-                               placeholder="{% trans 'Leave empty to remove expiration' %}"
+                               placeholder="{% trans 'Enter TTL' %}"
                                class="vIntegerField">
                         <div class="help">
                             {% trans 'Set number of seconds until key expires. Leave empty or use -1 to remove expiration.' %}
@@ -102,18 +112,20 @@
         </fieldset>
 
         <!-- Key Value Display and Editing -->
-        <fieldset class="module aligned">
+        <fieldset class="module">
             <h2>{% trans 'Key Value' %}</h2>
+            <br>
             
             {% if key_data.type == "string" %}
             <!-- String value editing -->
+             <h3>{% trans 'String Value' %}</h3>
+             <br>
             <form method="post" class="value-form">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="update_value">
                 <div class="form-row">
                     <div class="field-box">
-                        <label for="new_value">{% trans 'Value:' %}</label>
-                        <textarea id="new_value" name="new_value" class="vLargeTextField" rows="10">{{ key_data.value }}</textarea>
+                        <textarea id="new_value" name="new_value" class="string-value-field" rows="5">{{ key_data.value }}</textarea>
                         <div class="help">{% trans 'Edit the string value directly.' %}</div>
                     </div>
                     <div class="submit-row">
@@ -243,22 +255,7 @@
             {% endif %}
         </fieldset>
 
-        <!-- Danger Zone -->
-        <fieldset class="module aligned danger-zone">
-            <h2>{% trans 'Danger Zone' %}</h2>
-            <div class="form-row">
-                <div class="field-box">
-                    <form method="post" class="delete-form" onsubmit="return confirm('{% trans 'Are you sure you want to delete this key? This action cannot be undone.' %}');">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="delete_key">
-                        <input type="submit" value="{% trans 'Delete Key' %}" class="deletelink">
-                    </form>
-                    <div class="help">
-                        {% trans 'Permanently delete this key from Redis. This action cannot be undone.' %}
-                    </div>
-                </div>
-            </div>
-        </fieldset>
+
     </div>
     {% endif %}
 </div>

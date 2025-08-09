@@ -53,7 +53,7 @@ def index(request):
         redis_instances.append(instance_info)
 
     context = {
-        "title": "Redis Instances",
+        "title": "DJ Redis Panel - Instances",
         "opts": None,
         "has_permission": True,
         "site_title": admin.site.site_title,
@@ -283,7 +283,6 @@ def key_detail(request, instance_alias, db_number, key_name):
         error_message = str(e)
 
     context = {
-        "title": f"Redis Key - {key_name}",
         "opts": None,
         "has_permission": True,
         "site_title": admin.site.site_title,
