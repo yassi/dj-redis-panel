@@ -127,6 +127,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Django Redis Panel Configuration
 DJ_REDIS_PANEL_SETTINGS = {
+    "ALLOW_KEY_DELETE": True,
     "INSTANCES": {
         "local_redis": {
             "description": "Local Redis Instance",

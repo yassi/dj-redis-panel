@@ -264,6 +264,23 @@
     color: white !important;
 }
 
+/* Disabled delete button styling */
+.delete-button:disabled {
+    background-color: #ba2121 !important;
+    color: rgba(255, 255, 255, 0.6) !important;
+    border-color: #ba2121 !important;
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+}
+
+.delete-button:disabled:hover,
+.delete-button:disabled:focus {
+    background-color: #ba2121 !important;
+    border-color: #ba2121 !important;
+    color: rgba(255, 255, 255, 0.6) !important;
+    opacity: 0.6 !important;
+}
+
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
     .delete-button {
@@ -275,6 +292,21 @@
     .delete-button:focus {
         background-color: #b02329 !important;
         border-color: #b02329 !important;
+    }
+
+    .delete-button:disabled {
+        background-color: #cc2936 !important;
+        border-color: #cc2936 !important;
+        color: rgba(255, 255, 255, 0.6) !important;
+        opacity: 0.6 !important;
+    }
+
+    .delete-button:disabled:hover,
+    .delete-button:disabled:focus {
+        background-color: #cc2936 !important;
+        border-color: #cc2936 !important;
+        color: rgba(255, 255, 255, 0.6) !important;
+        opacity: 0.6 !important;
     }
 }
 

@@ -271,16 +271,27 @@ def key_detail(request, instance_alias, db_number, key_name):
                     error_message = "TTL must be a valid number"
 
             elif action == "delete_key":
-                redis_conn.delete(key_name)
-                return HttpResponseRedirect(
-                    reverse(
-                        "dj_redis_panel:key_search", args=[instance_alias, db_number]
+                # Check if key deletion is allowed
+                panel_settings = RedisPanelUtils.get_settings()
+                allow_key_delete = panel_settings.get("ALLOW_KEY_DELETE", False)
+                
+                if allow_key_delete:
+                    redis_conn.delete(key_name)
+                    return HttpResponseRedirect(
+                        reverse(
+                            "dj_redis_panel:key_search", args=[instance_alias, db_number]
+                        )
+                        + "?deleted=1"
                     )
-                    + "?deleted=1"
-                )
+                else:
+                    error_message = "Key deletion is disabled in settings"
 
     except Exception as e:
         error_message = str(e)
+
+    # Check if key deletion is allowed
+    panel_settings = RedisPanelUtils.get_settings()
+    allow_key_delete = panel_settings.get("ALLOW_KEY_DELETE", False)
 
     context = {
         "opts": None,
@@ -295,5 +306,6 @@ def key_detail(request, instance_alias, db_number, key_name):
         "key_data": key_data,
         "error_message": error_message,
         "success_message": success_message,
+        "allow_key_delete": allow_key_delete,
     }
     return render(request, "admin/dj_redis_panel/key_detail.html", context)
