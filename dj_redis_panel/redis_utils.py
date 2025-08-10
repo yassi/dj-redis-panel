@@ -398,3 +398,66 @@ class RedisPanelUtils:
                 "current_cursor": cursor,
                 "error": str(e)
             }
+    
+    @classmethod
+    def get_key_data(cls, instance_alias: str, db_number: int, key_name: str) -> Dict[str, Any]:
+        """
+        Get detailed information about a specific Redis key.        
+        """
+        try:
+            redis_conn = cls.get_redis_connection(instance_alias)
+            redis_conn.select(db_number)
+            
+            if not redis_conn.exists(key_name):
+                return {
+                    "name": key_name,
+                    "type": None,
+                    "ttl": None,
+                    "size": 0,
+                    "value": None,
+                    "exists": False,
+                    "error": None
+                }
+            
+            key_type = redis_conn.type(key_name)
+            ttl = redis_conn.ttl(key_name)
+            
+            key_value = None
+            key_size = 0
+            
+            if key_type == "string":
+                key_value = redis_conn.get(key_name) or ""
+                key_size = len(str(key_value).encode("utf-8"))
+            elif key_type == "list":
+                key_value = redis_conn.lrange(key_name, 0, -1)
+                key_size = redis_conn.llen(key_name)
+            elif key_type == "set":
+                key_value = list(redis_conn.smembers(key_name))
+                key_size = redis_conn.scard(key_name)
+            elif key_type == "zset":
+                key_value = redis_conn.zrange(key_name, 0, -1, withscores=True)
+                key_size = redis_conn.zcard(key_name)
+            elif key_type == "hash":
+                key_value = redis_conn.hgetall(key_name)
+                key_size = redis_conn.hlen(key_name)
+            
+            return {
+                "name": key_name,
+                "type": key_type,
+                "ttl": ttl if ttl > 0 else None,
+                "size": key_size,
+                "value": key_value,
+                "exists": True,
+                "error": None
+            }
+            
+        except Exception as e:
+            return {
+                "name": key_name,
+                "type": None,
+                "ttl": None,
+                "size": 0,
+                "value": None,
+                "exists": False,
+                "error": str(e)
+            }
