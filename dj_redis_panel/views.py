@@ -109,6 +109,7 @@ def key_search(request, instance_alias, db_number):
     search_query = request.GET.get("q", "*")
     page = request.GET.get('page', 1)
     per_page = int(request.GET.get('per_page', 25))
+    cursor_param = request.GET.get('cursor', '0')  # Get cursor from URL parameter
     selected_db = int(db_number)  # Use the URL parameter instead of GET parameter
     
     # no need to support weird values for pagination, just allow our presets
@@ -125,14 +126,31 @@ def key_search(request, instance_alias, db_number):
             page_num = int(page)
         except (ValueError, TypeError):
             page_num = 1
-            
-        scan_result = RedisPanelUtils.paginated_scan(
-            instance_alias=instance_alias,
-            db_number=selected_db,
-            pattern=search_query,
-            page=page_num,
-            per_page=per_page
-        )
+        
+        try:
+            cursor_int = int(cursor_param)
+        except (ValueError, TypeError):
+            cursor_int = 0
+        
+        # Check if cursor-based pagination is enabled for this instance
+        use_cursor_pagination = RedisPanelUtils.is_feature_enabled(instance_alias, "CURSOR_PAGINATED_SCAN")
+        
+        if use_cursor_pagination:
+            scan_result = RedisPanelUtils.cursor_paginated_scan(
+                instance_alias=instance_alias,
+                db_number=selected_db,
+                pattern=search_query,
+                per_page=per_page,
+                cursor=cursor_int
+            )
+        else:
+            scan_result = RedisPanelUtils.paginated_scan(
+                instance_alias=instance_alias,
+                db_number=selected_db,
+                pattern=search_query,
+                page=page_num,
+                per_page=per_page
+            )
         
         if scan_result["error"]:
             error_message = scan_result["error"]
@@ -148,6 +166,7 @@ def key_search(request, instance_alias, db_number):
         error_message = str(e)
         keys_data = []
         total_keys = 0
+        use_cursor_pagination = RedisPanelUtils.is_feature_enabled(instance_alias, "CURSOR_PAGINATED_SCAN")
         scan_result = {
             "page": 1,
             "per_page": per_page,
@@ -182,6 +201,9 @@ def key_search(request, instance_alias, db_number):
         "start_index": (scan_result["page"] - 1) * scan_result["per_page"] + 1,
         "end_index": min((scan_result["page"] - 1) * scan_result["per_page"] + len(keys_data), total_keys),
         "page_range": _get_page_range(scan_result["page"], scan_result["total_pages"]),
+        "use_cursor_pagination": use_cursor_pagination,
+        "current_cursor": scan_result.get("current_cursor", 0),
+        "next_cursor": scan_result.get("next_cursor", 0),
     }
     return render(request, "admin/dj_redis_panel/key_search.html", context)
 

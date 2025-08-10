@@ -274,3 +274,127 @@ class RedisPanelUtils:
                 "limited_scan": False,
                 "error": str(e)
             }
+        
+    @classmethod
+    def cursor_paginated_scan(
+        cls, 
+        instance_alias: str, 
+        db_number: int, 
+        pattern: str = "*", 
+        per_page: int = 25,
+        scan_count: int = 100,
+        cursor: int = 0
+    ) -> Dict[str, Any]:
+        """
+        Perform a cursor-based paginated SCAN operation on Redis keys.
+
+        Rather than scanning all keys and then applying pagination,
+        we scan the keys in chunks of scan_count. This is much more
+        efficient and should be used whenever the dataset is too
+        large and paginated_scan() is too slow.
+        """
+        try:
+            redis_conn = cls.get_redis_connection(instance_alias)
+            redis_conn.select(db_number)
+            
+            # Use the provided cursor directly - no approximation needed
+            current_cursor = cursor
+            page_keys = []
+            scan_iterations = 0
+            max_scan_iterations = 20  # Limit iterations per page to prevent infinite loops
+            
+            # Scan from the provided cursor until we have enough keys for this page
+            while len(page_keys) < per_page and scan_iterations < max_scan_iterations:
+                current_cursor, partial_keys = redis_conn.scan(
+                    cursor=current_cursor, 
+                    match=pattern, 
+                    count=scan_count
+                )
+                
+                # Filter and add keys to our page
+                matching_keys = [k for k in partial_keys if k]
+                remaining_needed = per_page - len(page_keys)
+                page_keys.extend(matching_keys[:remaining_needed])
+                
+                scan_iterations += 1
+                
+                # If cursor returned to 0, we've completed the full scan
+                if current_cursor == 0:
+                    break
+            
+            # Sort keys for consistent display
+            page_keys.sort()
+            
+            # Get detailed information for each key on this page
+            keys_with_details = []
+            for key in page_keys:
+                try:
+                    key_str = str(key)
+                    key_type = redis_conn.type(key)
+                    ttl = redis_conn.ttl(key)
+                    
+                    # Get size/length based on type
+                    size = 0
+                    if key_type == "string":
+                        value = redis_conn.get(key) or ""
+                        size = len(str(value).encode("utf-8"))
+                    elif key_type == "list":
+                        size = redis_conn.llen(key)
+                    elif key_type == "set":
+                        size = redis_conn.scard(key)
+                    elif key_type == "zset":
+                        size = redis_conn.zcard(key)
+                    elif key_type == "hash":
+                        size = redis_conn.hlen(key)
+                    
+                    keys_with_details.append({
+                        "key": key_str,
+                        "type": key_type,
+                        "ttl": ttl if ttl > 0 else None,
+                        "size": size,
+                    })
+                except Exception:
+                    # Skip keys that can't be processed
+                    continue
+            
+            # With cursor-based pagination, we don't estimate totals
+            # Instead, we focus on "has_more" navigation
+            has_more = current_cursor != 0
+            scan_complete = current_cursor == 0
+            
+            # For compatibility with the template, we provide minimal pagination info
+            # In cursor-based pagination, we don't have accurate total counts
+            estimated_total = len(page_keys) if scan_complete and cursor == 0 else len(page_keys)
+            if has_more:
+                estimated_total = max(estimated_total, per_page)  # At least one page worth
+            
+            return {
+                "keys": [str(key) for key in page_keys],
+                "keys_with_details": keys_with_details,
+                "total_keys": estimated_total,  # Not accurate for cursor-based
+                "page": 1,  # Always 1 for cursor-based (for template compatibility)
+                "per_page": per_page,
+                "total_pages": 1,  # Not meaningful in cursor-based pagination
+                "has_more": has_more,
+                "scan_complete": scan_complete,
+                "limited_scan": False,
+                "next_cursor": current_cursor,  # The cursor for the next page
+                "current_cursor": cursor,  # The cursor used for this page
+                "error": None
+            }
+            
+        except Exception as e:
+            return {
+                "keys": [],
+                "keys_with_details": [],
+                "total_keys": 0,
+                "page": 1,  # Always 1 for cursor-based (for template compatibility)
+                "per_page": per_page,
+                "total_pages": 0,
+                "has_more": False,
+                "scan_complete": False,
+                "limited_scan": False,
+                "next_cursor": 0,
+                "current_cursor": cursor,
+                "error": str(e)
+            }

@@ -13,6 +13,21 @@
 
 
 {% block content %}
+        <!-- Pagination Mode Indicator -->
+        <div class="pagination-mode-indicator">
+            {% if use_cursor_pagination %}
+                <span class="badge cursor-mode">
+                    📄 {% trans 'CURSOR PAGINATION' %}
+                </span>
+            {% else %}
+                <span class="badge page-mode">
+                    🔢 {% trans 'PAGE PAGINATION' %}
+                </span>
+            {% endif %}
+        </div>
+
+
+
 <div class="module key-search">
     {% if success_message %}
     <div class="messagelist">
@@ -74,13 +89,23 @@
         <h2>{% trans 'Search Results' %}</h2>
         <br>
         <p class="help">
-            {% if total_keys > 0 %}
-                {% blocktrans with total=total_keys start=start_index end=end_index %}Found {{ total }} keys, showing {{ start }} to {{ end }}{% endblocktrans %}
-                {% if total_keys >= 100000 %}
-                    <br><em>{% trans 'Search limited to first 100,000 matching keys. Refine your search pattern for more specific results.' %}</em>
+            {% if use_cursor_pagination %}
+                {% if showing_keys > 0 %}
+                    {% blocktrans with count=showing_keys %}Showing {{ count }} keys{% endblocktrans %}
+                    {% if has_next %} - <span class="quiet">{% trans 'more available' %}</span>{% endif %}
+                    {% if current_cursor > 0 %}<br><em class="quiet">{% trans 'Cursor position' %}: {{ current_cursor }}</em>{% endif %}
+                {% else %}
+                    {% trans 'No keys found matching your search pattern.' %}
                 {% endif %}
             {% else %}
-                {% trans 'No keys found matching your search pattern.' %}
+                {% if total_keys > 0 %}
+                    {% blocktrans with total=total_keys start=start_index end=end_index %}Found {{ total }} keys, showing {{ start }} to {{ end }}{% endblocktrans %}
+                    {% if total_keys >= 100000 %}
+                        <br><em>{% trans 'Search limited to first 100,000 matching keys. Refine your search pattern for more specific results.' %}</em>
+                    {% endif %}
+                {% else %}
+                    {% trans 'No keys found matching your search pattern.' %}
+                {% endif %}
             {% endif %}
         </p>
     </div>
@@ -136,26 +161,43 @@
         
         <!-- Pagination using exact Django admin structure -->
         <p class="paginator" align="right">
-        {% if total_pages > 1 %}
-            {% if has_previous %}
-                <a href="?{% if search_query != '*' %}q={{ search_query|urlencode }}&{% endif %}per_page={{ per_page }}&page={{ previous_page }}" class="prev">{% trans 'previous' %}</a>
+        {% if use_cursor_pagination %}
+            <!-- Cursor-based pagination: only previous/next navigation -->
+            {% if current_cursor > 0 %}
+                <a href="?{% if search_query != '*' %}q={{ search_query|urlencode }}&{% endif %}per_page={{ per_page }}&cursor=0" class="prev">{% trans 'first' %}</a>
             {% endif %}
-            
-            {% for num in page_range %}
-                {% if num == "..." %}
-                    …
-                {% elif num == current_page %}
-                    <span class="this-page">{{ num }}</span>
-                {% else %}
-                    <a href="?{% if search_query != '*' %}q={{ search_query|urlencode }}&{% endif %}per_page={{ per_page }}&page={{ num }}">{{ num }}</a>
-                {% endif %}
-            {% endfor %}
             
             {% if has_next %}
-                <a href="?{% if search_query != '*' %}q={{ search_query|urlencode }}&{% endif %}per_page={{ per_page }}&page={{ next_page }}" class="next">{% trans 'next' %}</a>
+                <a href="?{% if search_query != '*' %}q={{ search_query|urlencode }}&{% endif %}per_page={{ per_page }}&cursor={{ next_cursor }}" class="next">{% trans 'next' %}</a>
             {% endif %}
+            
+            {% if total_keys > 0 %}
+                {% trans 'Cursor-based pagination' %} - {{ showing_keys }} {% trans 'keys shown' %}
+                {% if has_next %} ({% trans 'more available' %}){% endif %}
+            {% endif %}
+        {% else %}
+            <!-- Traditional page-based pagination -->
+            {% if total_pages > 1 %}
+                {% if has_previous %}
+                    <a href="?{% if search_query != '*' %}q={{ search_query|urlencode }}&{% endif %}per_page={{ per_page }}&page={{ previous_page }}" class="prev">{% trans 'previous' %}</a>
+                {% endif %}
+                
+                {% for num in page_range %}
+                    {% if num == "..." %}
+                        …
+                    {% elif num == current_page %}
+                        <span class="this-page">{{ num }}</span>
+                    {% else %}
+                        <a href="?{% if search_query != '*' %}q={{ search_query|urlencode }}&{% endif %}per_page={{ per_page }}&page={{ num }}">{{ num }}</a>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if has_next %}
+                    <a href="?{% if search_query != '*' %}q={{ search_query|urlencode }}&{% endif %}per_page={{ per_page }}&page={{ next_page }}" class="next">{% trans 'next' %}</a>
+                {% endif %}
+            {% endif %}
+            {{ total_keys }} {% blocktrans count counter=total_keys %}key{% plural %}keys{% endblocktrans %}
         {% endif %}
-        {{ total_keys }} {% blocktrans count counter=total_keys %}key{% plural %}keys{% endblocktrans %}
         </p>
     </div>
     {% endif %}

@@ -142,7 +142,6 @@
 
 .key-type-set {
     background-color: #ffc107;
-    color: #000;
 }
 
 .key-type-zset {
@@ -307,6 +306,42 @@
         border-color: #cc2936 !important;
         color: rgba(255, 255, 255, 0.6) !important;
         opacity: 0.6 !important;
+    }
+}
+
+/* Pagination Mode Indicator Styles */
+.pagination-mode-indicator {
+    margin-bottom: 10px;
+}
+
+.pagination-mode-indicator .badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.pagination-mode-indicator .badge.cursor-mode {
+    background-color: #2196F3;
+    color: white;
+}
+
+.pagination-mode-indicator .badge.page-mode {
+    background-color: #4CAF50;
+    color: white;
+}
+
+/* Dark mode support for badges */
+@media (prefers-color-scheme: dark) {
+    .pagination-mode-indicator .badge.cursor-mode {
+        background-color: #1976D2;
+    }
+
+    .pagination-mode-indicator .badge.page-mode {
+        background-color: #388E3C;
     }
 }
 

@@ -131,6 +131,7 @@ DJ_REDIS_PANEL_SETTINGS = {
     "ALLOW_KEY_DELETE": False, # Example of global feature
     "ALLOW_KEY_EDIT": False,
     "ALLOW_TTL_UPDATE": False,
+    "CURSOR_PAGINATED_SCAN": False,
     "INSTANCES": {
         "local_redis": {
             "description": "Local Redis Instance",
@@ -140,6 +141,7 @@ DJ_REDIS_PANEL_SETTINGS = {
                 "ALLOW_KEY_DELETE": True,
                 "ALLOW_KEY_EDIT": True,
                 "ALLOW_TTL_UPDATE": True,
+                "CURSOR_PAGINATED_SCAN": True,
             },
         },
         "local_redis_from_url_no_features": {
