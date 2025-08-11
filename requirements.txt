@@ -1,0 +1,14 @@
+# This is the requirements.txt file for the Django Redis Panel project.
+# It is used to install dependencies for development and testing.
+# For dependencies of the project related to simply using it within
+# projects, see setup.cfg
+
+# Install the package in editable mode
+-e .
+
+# Testing dependencies for Django Redis Panel
+# Core testing framework
+pytest>=7.0.0
+pytest-django>=4.5.0
+pytest-cov>=4.0.0
+pytest-xdist>=3.2.0
