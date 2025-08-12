@@ -37,5 +37,5 @@ test_install: build
 test: install_dev
 	python -m pytest tests/
 
-publish: build
+publish:
 	twine upload --repository $(PYPI_REPO) dist/*

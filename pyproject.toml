@@ -1,0 +1,97 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dj-redis-panel"
+version = "0.1.0"
+description = "A Django Admin panel for browsing and inspecting Redis keys"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Yasser Toruno"},
+]
+maintainers = [
+    {name = "Yasser Toruno"},
+]
+requires-python = ">=3.9"
+classifiers = [
+    "Framework :: Django",
+    "Framework :: Django :: 4.2",
+    "Framework :: Django :: 5.0",
+    "Framework :: Django :: 5.1",
+    "Framework :: Django :: 5.2",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+]
+keywords = ["django", "redis", "admin", "panel", "database", "key-value"]
+dependencies = [
+    "Django>=4.2",
+    "redis>=4.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-django>=4.5.0",
+    "pytest-cov>=4.0.0",
+    "pytest-xdist>=3.2.0",
+]
+build = [
+    "build>=1.0.0",
+    "twine>=4.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/yassi/dj-redis-panel"
+Documentation = "https://github.com/yassi/dj-redis-panel"
+Repository = "https://github.com/yassi/dj-redis-panel"
+"Bug Tracker" = "https://github.com/yassi/dj-redis-panel/issues"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+exclude = ["tests*", "example_project*"]
+
+[tool.setuptools.package-data]
+"dj_redis_panel" = ["templates/**/*"]
+
+# pytest configuration
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "example_project.settings"
+testpaths = ["tests"]
+addopts = [
+    "--verbose",
+    "--tb=short",
+    "--strict-markers",
+    "--disable-warnings",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]
+
+# Coverage configuration
+[tool.coverage.run]
+source = ["dj_redis_panel"]
+omit = [
+    "*/migrations/*",
+    "*/tests/*",
+    "*/venv/*",
+    "*/env/*",
+    "example_project/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+]
