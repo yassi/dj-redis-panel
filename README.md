@@ -38,6 +38,14 @@ dj-redis-panel/
 └── requirements.txt         # Development dependencies
 ```
 
+## Requirements
+
+- Python 3.9+
+- Django 4.2+
+- Redis 4.0+
+- redis-py 4.0+
+
+
 
 ## Screenshots
 
@@ -124,16 +132,9 @@ DJ_REDIS_PANEL_SETTINGS = {
                 "CURSOR_PAGINATED_SCAN": True,
             },
         },
-        "cache": {
+        "other_instance": {
             "description": "Cache Redis Instance",
-            "url": "redis://127.0.0.1:6379/1",
-        },
-        "sessions": {
-            "description": "Session Store",
-            "host": "redis.example.com",
-            "port": 6379,
-            "db": 2,
-            "password": "your-redis-password",
+            "url": "rediss://127.0.0.1:6379",
         },
     }
 }
@@ -222,13 +223,6 @@ Feature flags can be set globally and overridden per instance:
 - **`ALLOW_TTL_UPDATE`**: Controls whether key expiration can be updated
 - **`CURSOR_PAGINATED_SCAN`**: Chooses pagination method (cursor vs. page-based)
 
-## Requirements
-
-- Python 3.9+
-- Django 4.2+
-- Redis 4.0+
-- redis-py 4.0+
-
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
@@ -244,6 +238,7 @@ If you want to contribute to this project or set it up for local development:
 - Python 3.9 or higher
 - Redis server running locally
 - Git
+- Autoconf
 
 ### 1. Clone the Repository
 
@@ -259,10 +254,21 @@ python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-### 3. Install Development Dependencies
+### 3. Install dj-redis-panel inside of your virtualenv
 
+A make file is included in the repository root with multiple commands for building
+and maintaining this project. The best approach is to start by using one of the
+package installation commands found below:
 ```bash
-pip install -r requirements.txt
+# Build and install a wheel for this project
+# Also install all dev dependencies such as pytest and other utilities
+make install_dev
+
+# Build and install a wheel for this project
+make install
+
+# build and install all dev dependencies and run all tests
+make test
 ```
 
 ### 4. Set Up Example Project
@@ -276,6 +282,8 @@ python manage.py createsuperuser
 ```
 
 ### 5. Populate Test Data (Optional)
+An optional CLI tool for populating redis keys automatically is included in the
+example django project in this code base.
 
 ```bash
 python manage.py populate_redis
@@ -293,10 +301,14 @@ Visit `http://127.0.0.1:8000/admin/` to access the Django admin with Redis Panel
 
 ### 7. Running Tests
 
-The project includes a comprehensive test suite:
+The project includes a comprehensive test suite. You can run them by using make or
+by invoking pytest directly:
 
 ```bash
-# From the project root
+# run using make which will also install all dependencies (recommended)
+make test
+
+# run using pytest directly
 pytest tests/
 
 # Run with coverage
@@ -308,11 +320,13 @@ pytest tests/test_views.py
 
 **Note**: Tests require a running Redis server on `127.0.0.1:6379`. The tests use databases 13, 14, and 15 for isolation and automatically clean up after each test.
 
-### 8. Docker Development (Alternative)
+### 8. Dockerized Redis
 
-You can also use Docker for development:
+Test for this project (as well as any active development) require an active redis installation.
+Although not required, a docker-compose file is included to allow for easy creation of local
+redis instances.
 
 ```bash
-# Start Redis and other services
+# Start Redis on localhost and the usual port 6379
 docker-compose up redis -d
 ```

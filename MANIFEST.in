@@ -1,3 +1,2 @@
 include README.md
 recursive-include dj_redis_panel/templates *
-recursive-include dj_redis_panel/static *
