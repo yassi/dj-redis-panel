@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dj-redis-panel"
-version = "0.1.1"
+version = "0.1.2"
 description = "A Django Admin panel for browsing and inspecting Redis keys"
 readme = "README.md"
 license = {text = "MIT"}
@@ -49,8 +49,8 @@ build = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yassi/dj-redis-panel"
-Documentation = "https://github.com/yassi/dj-redis-panel"
+Homepage = "https://yassi.github.io/dj-redis-panel/"
+Documentation = "https://yassi.github.io/dj-redis-panel/"
 Repository = "https://github.com/yassi/dj-redis-panel"
 "Bug Tracker" = "https://github.com/yassi/dj-redis-panel/issues"
 
