@@ -49,8 +49,8 @@ build = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yassi/dj-redis-panel"
-Documentation = "https://github.com/yassi/dj-redis-panel"
+Homepage = "https://yassi.github.io/dj-redis-panel/"
+Documentation = "https://yassi.github.io/dj-redis-panel/"
 Repository = "https://github.com/yassi/dj-redis-panel"
 "Bug Tracker" = "https://github.com/yassi/dj-redis-panel/issues"
 
