@@ -37,9 +37,15 @@ test_install: build
 test: install_dev
 	python -m pytest tests/
 
-docs: install_dev
-	mkdocs build
-	mkdocs serve
 
 publish:
 	twine upload --repository $(PYPI_REPO) dist/*
+
+docs: install_dev
+	mkdocs build
+
+docs_serve: docs
+	mkdocs serve
+
+docs_push: docs
+	mkdocs gh-deploy --force
