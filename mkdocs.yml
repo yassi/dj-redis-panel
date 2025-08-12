@@ -1,0 +1,13 @@
+site_name: My Docs
+theme:
+  name: material
+  features:
+    - navigation.tabs.link
+    - navigation.sections.embed
+    - navigation.sections.scroll
+    - navigation.sections.explicit
+    - navigation.sections.fold
+    - navigation.sections.expand
+    - navigation.sections.sticky
+  palette:
+    - default

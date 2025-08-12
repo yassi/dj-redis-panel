@@ -17,7 +17,7 @@ help:
 clean:
 	rm -rf build dist *.egg-info
 
-build:
+build: clean
 	python -m build
 
 install: build
@@ -36,6 +36,10 @@ test_install: build
 
 test: install_dev
 	python -m pytest tests/
+
+docs: install_dev
+	mkdocs build
+	mkdocs serve
 
 publish:
 	twine upload --repository $(PYPI_REPO) dist/*
