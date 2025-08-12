@@ -2,7 +2,7 @@
 
 A Django Admin panel for browsing, inspecting, and managing Redis keys. No postgres/mysql models or changes required.
 
-![Django Redis Panel - Instance List](images/instances_list.png)
+![Django Redis Panel - Instance List](https://raw.githubusercontent.com/yassi/dj-redis-panel/main/images/instances_list.png)
 
 ## Features
 
@@ -55,32 +55,32 @@ will appear in the same places where your models appear.
 
 **NOTE:** This application does not actually introduce any model or migrations.
 
-![Admin Home](images/admin_home.png)
+![Admin Home](https://raw.githubusercontent.com/yassi/dj-redis-panel/main/images/admin_home.png)
 
 ### Instance Overview
 Monitor your Redis instances with detailed metrics and database information.
 
-![Instance Overview](images/instance_overview.png)
+![Instance Overview](https://raw.githubusercontent.com/yassi/dj-redis-panel/main/images/instance_overview.png)
 
 ### Key Search - Page-based Pagination
 Search for keys with traditional page-based navigation.
 
-![Key Search - Page Index](images/key_search_page_index.png)
+![Key Search - Page Index](https://raw.githubusercontent.com/yassi/dj-redis-panel/main/images/key_search_page_index.png)
 
 ### Key Search - Cursor-based Pagination  
 Efficient cursor-based pagination for large datasets.
 
-![Key Search - Cursor](images/key_search_cursor.png)
+![Key Search - Cursor](https://raw.githubusercontent.com/yassi/dj-redis-panel/main/images/key_search_cursor.png)
 
 ### Key Detail - String Values
 View and edit string key values with TTL management.
 
-![Key Detail - String](images/key_detail_string.png)
+![Key Detail - String](https://raw.githubusercontent.com/yassi/dj-redis-panel/main/images/key_detail_string.png)
 
 ### Key Detail - Other data structures
 Browse keys with more complex data structures such as hashes, lists, etc. 
 
-![Key Detail - Hash](images/key_detail_hash.png)
+![Key Detail - Hash](https://raw.githubusercontent.com/yassi/dj-redis-panel/main/images/key_detail_hash.png)
 
 
 ## Installation
