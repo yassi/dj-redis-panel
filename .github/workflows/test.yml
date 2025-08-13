@@ -25,6 +25,7 @@ jobs:
 
       - name: Install package and dependencies
         run: |
+            pip install build
             make install_dev
 
       - name: Run tests
