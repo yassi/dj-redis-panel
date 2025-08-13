@@ -33,9 +33,8 @@ jobs:
             pytest --cov=dj_redis_panel --cov-report=xml
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
-          file: ./coverage.xml
+          token: ${{ secrets.CODECOV_TOKEN }}
           flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: false
+          fail_ci_if_error: true
