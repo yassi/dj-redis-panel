@@ -1,0 +1,41 @@
+name: Publish
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+
+      - name: Install package and dependencies
+        run: |
+          pip install build
+          make install_dev
+
+      - name: check package before publish
+        run: |
+          twine check dist/*
+    
+      - name: Ensure version is correct
+        run: |
+          VER=$(python - <<'PY' from importlib.metadata import version; print(version("dj-redis-panel")) PY
+          )
+          test "${GITHUB_REF#refs/tags/}" = "$VER"
+
+      - name: publish package
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+            attestations: true
