@@ -1,5 +1,11 @@
 # Django Redis Panel
 
+[![Tests](https://github.com/yassi/dj-redis-panel/actions/workflows/test.yml/badge.svg)](https://github.com/yassi/dj-redis-panel/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/yassi/dj-redis-panel/branch/main/graph/badge.svg)](https://codecov.io/gh/yassi/dj-redis-panel)
+[![PyPI version](https://badge.fury.io/py/dj-redis-panel.svg)](https://badge.fury.io/py/dj-redis-panel)
+[![Python versions](https://img.shields.io/pypi/pyversions/dj-redis-panel.svg)](https://pypi.org/project/dj-redis-panel/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A Django Admin panel for browsing, inspecting, and managing Redis keys. No postgres/mysql models or changes required.
 
 ![Django Redis Panel - Instance List](https://raw.githubusercontent.com/yassi/dj-redis-panel/main/images/instances_list.png)

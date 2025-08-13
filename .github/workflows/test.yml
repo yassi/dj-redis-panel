@@ -28,6 +28,14 @@ jobs:
             pip install build
             make install_dev
 
-      - name: Run tests
+      - name: Run tests with coverage
         run: |
-            pytest
+            pytest --cov=dj_redis_panel --cov-report=xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
