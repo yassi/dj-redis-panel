@@ -1,3 +1,7 @@
+# core dependencies
+Django>=4.2
+redis>=4.0
+
 # Testing dependencies for Django Redis Panel
 pytest>=7.0.0
 pytest-django>=4.5.0

@@ -86,7 +86,10 @@ omit = [
     "*/venv/*",
     "*/env/*",
     "example_project/*",
+    "*/__pycache__/*",
+    "*/site-packages/*",
 ]
+branch = true
 
 [tool.coverage.report]
 exclude_lines = [
@@ -94,4 +97,16 @@ exclude_lines = [
     "def __repr__",
     "raise AssertionError",
     "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "pass",
+    "\\.\\.\\.",
 ]
+show_missing = true
+skip_covered = false
+precision = 2
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.coverage.xml]
+output = "coverage.xml"
