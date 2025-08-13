@@ -1,0 +1,32 @@
+name: Tests
+
+on: [push]
+
+jobs:
+  python-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.9, 3.12]
+
+    services:
+      redis:
+        image: redis:7.4.1
+        ports: ["6379:6379"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install package and dependencies
+        run: |
+            make install_dev
+
+      - name: Run tests
+        run: |
+            pytest
