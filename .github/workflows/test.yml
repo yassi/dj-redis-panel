@@ -5,9 +5,15 @@ on: [push]
 jobs:
   python-tests:
     runs-on: ubuntu-latest
+    name: Python ${{ matrix.python-version }} - Django ${{ matrix.django-version }}
     strategy:
       matrix:
-        python-version: [3.9, 3.12]
+        python-version: [3.9, 3.13]
+        django-version: [4.2, 5.2]
+        exclude:
+          # Django 5.0+ requires Python 3.10+
+          - python-version: 3.9
+            django-version: 5.2
 
     services:
       redis:
@@ -19,7 +25,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -27,6 +33,7 @@ jobs:
         run: |
             pip install build
             make install_dev
+            pip install "Django~=${{ matrix.django-version }}.0"
 
       - name: Run tests with coverage
         run: |
@@ -36,5 +43,5 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          flags: unittests
+          flags: unittests,python-${{ matrix.python-version }},django-${{ matrix.django-version }}
           fail_ci_if_error: true
