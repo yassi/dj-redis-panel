@@ -10,6 +10,10 @@ A Django Admin panel for browsing, inspecting, and managing Redis keys. No postg
 
 ![Django Redis Panel - Instance List](https://raw.githubusercontent.com/yassi/dj-redis-panel/main/images/instances_list.png)
 
+## Docs
+
+[https://yassi.github.io/dj-redis-panel/](https://yassi.github.io/dj-redis-panel/)
+
 ## Features
 
 - 🔍 **Browse Redis Keys**: Search and filter Redis keys with pattern matching
@@ -131,7 +135,6 @@ DJ_REDIS_PANEL_SETTINGS = {
             "description": "Default Redis Instance",
             "host": "127.0.0.1",
             "port": 6379,
-            "db": 0,
             # Optional: override global settings for this instance
             "features": {
                 "ALLOW_KEY_DELETE": True,
@@ -201,7 +204,6 @@ Each Redis instance can be configured with:
     "description": "Human-readable description",
     "host": "127.0.0.1",
     "port": 6379,
-    "db": 0,                    # Optional, default: 0
     "password": "password",     # Optional
     "features": {               # Optional: override global settings
         "ALLOW_KEY_DELETE": True,
@@ -213,7 +215,7 @@ Each Redis instance can be configured with:
 ```python
 "instance_name": {
     "description": "Human-readable description", 
-    "url": "redis://user:password@host:port/db",
+    "url": "redis://user:password@host:port",
     "features": {               # Optional: override global settings
         "CURSOR_PAGINATED_SCAN": True,
     },
