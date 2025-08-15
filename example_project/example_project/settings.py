@@ -150,3 +150,36 @@ DJ_REDIS_PANEL_SETTINGS = {
         },
     }
 }
+
+
+# Simple Console Logging Configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'simple': {
+            'format': '{asctime} [{levelname}] {name}: {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+    },
+    'loggers': {
+        # Django Redis Panel logging
+        'dj_redis_panel': {
+            'handlers': ['console'],
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': True,
+        },
+        
+        # Root logger
+        'root': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+        },
+    },
+}

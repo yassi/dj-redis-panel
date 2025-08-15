@@ -158,8 +158,8 @@ from django.contrib import admin
 from django.urls import path, include
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
     path('admin/redis/', include('dj_redis_panel.urls')),  # Add this line
+    path('admin/', admin.site.urls),
 ]
 ```
 
