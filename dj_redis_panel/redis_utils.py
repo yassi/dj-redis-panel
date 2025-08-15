@@ -12,7 +12,7 @@ REDIS_PANEL_SETTINGS_NAME = "DJ_REDIS_PANEL_SETTINGS"
 
 class RedisPanelUtils:
     @classmethod
-    def get_settings(cls) -> Dict[str, Any]:
+    def get_settings(cls) -> Dict[str, Any]:  # pragma: no cover
         panel_settings = getattr(settings, REDIS_PANEL_SETTINGS_NAME, {})
         return panel_settings
 
