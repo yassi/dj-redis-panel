@@ -1,6 +1,10 @@
 import redis
+import logging
 from django.conf import settings
 from typing import Dict, Any
+
+
+logger = logging.getLogger(__name__)
 
 
 REDIS_PANEL_SETTINGS_NAME = "DJ_REDIS_PANEL_SETTINGS"
@@ -81,12 +85,14 @@ class RedisPanelUtils:
 
         if "url" in config:
             if config["url"].startswith("rediss://"):
+                logger.debug(f"Creating Redis connection using URL with SSL enabled")
                 return redis.Redis.from_url(
                     config["url"],
                     ssl_cert_reqs=config.get("ssl_cert_reqs", None),
                     decode_responses=True,
                 )
             else:
+                logger.debug(f"Creating Redis connection using URL with SSL disabled")
                 return redis.Redis.from_url(config["url"], decode_responses=True)
 
         # Optional connection parameters
@@ -104,6 +110,8 @@ class RedisPanelUtils:
             connection_params["socket_connect_timeout"] = config[
                 "socket_connect_timeout"
             ]
+
+        logger.debug(f"Creating Redis connection with params for host: {connection_params['host']}, port: {connection_params['port']}")
 
         return redis.Redis(**connection_params)
 
@@ -154,6 +162,7 @@ class RedisPanelUtils:
                 "error": None,
             }
         except Exception as e:
+            logger.exception(f"Error getting instance meta data for {instance_alias}", exc_info=True)
             return {
                 "status": "disconnected",
                 "info": None,
@@ -262,6 +271,7 @@ class RedisPanelUtils:
             }
             
         except Exception as e:
+            logger.exception(f"Error in paginated scan for {instance_alias}", exc_info=True)
             return {
                 "keys": [],
                 "keys_with_details": [],
@@ -384,6 +394,7 @@ class RedisPanelUtils:
             }
             
         except Exception as e:
+            logger.exception(f"Error in cursor paginated scan for {instance_alias}", exc_info=True)
             return {
                 "keys": [],
                 "keys_with_details": [],
@@ -452,6 +463,7 @@ class RedisPanelUtils:
             }
             
         except Exception as e:
+            logger.exception(f"Error getting key data for {instance_alias} in db {db_number} for key {key_name}", exc_info=True)
             return {
                 "name": key_name,
                 "type": None,
