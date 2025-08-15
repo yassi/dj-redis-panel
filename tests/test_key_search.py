@@ -6,6 +6,8 @@ with support for both traditional page-based and cursor-based pagination.
 """
 import redis
 from django.urls import reverse
+from dj_redis_panel.views import _get_page_range
+
 from .base import RedisTestCase
 
 
@@ -247,3 +249,65 @@ class TestKeySearchView(RedisTestCase):
             # Cleanup pagination test keys
             for i in range(50):
                 self.redis_conn.delete(f'pagination_test:{i}')
+
+
+class TestGetPageRange(RedisTestCase):
+    """Test cases for the _get_page_range utility function."""
+    
+    def setUp(self):
+        """
+        Skip all the data setup for this test case
+        """
+        pass
+    
+    def test_get_page_range_scenarios(self):
+        """Test _get_page_range with comprehensive test cases."""
+        test_cases = [
+            # Small page counts (≤ 10) - should return all pages
+            {"current": 1, "total": 1, "expected": [1], "description": "Single page"},
+            {"current": 1, "total": 2, "expected": [1, 2], "description": "Two pages"},
+            {"current": 2, "total": 2, "expected": [1, 2], "description": "Two pages, current=2"},
+            {"current": 1, "total": 5, "expected": [1, 2, 3, 4, 5], "description": "Five pages"},
+            {"current": 5, "total": 10, "expected": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], "description": "Ten pages, current=5"},
+            {"current": 10, "total": 10, "expected": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], "description": "Ten pages, current=10"},
+            
+            # Edge case: 11 pages (first large case)
+            {"current": 1, "total": 11, "expected": [1, 2, 3, 4, 5, 6, "...", 11], "description": "11 pages, current=1"},
+            {"current": 6, "total": 11, "expected": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], "description": "11 pages, current=6 (no ellipsis)"},
+            {"current": 11, "total": 11, "expected": [1, "...", 6, 7, 8, 9, 10, 11], "description": "11 pages, current=11"},
+            
+            # Large page counts - current page at beginning
+            {"current": 1, "total": 100, "expected": [1, 2, 3, 4, 5, 6, "...", 100], "description": "100 pages, current=1"},
+            {"current": 2, "total": 100, "expected": [1, 2, 3, 4, 5, 6, 7, "...", 100], "description": "100 pages, current=2"},
+            {"current": 3, "total": 100, "expected": [1, 2, 3, 4, 5, 6, 7, 8, "...", 100], "description": "100 pages, current=3"},
+            
+            # Large page counts - current page at end
+            {"current": 100, "total": 100, "expected": [1, "...", 95, 96, 97, 98, 99, 100], "description": "100 pages, current=100"},
+            {"current": 99, "total": 100, "expected": [1, "...", 94, 95, 96, 97, 98, 99, 100], "description": "100 pages, current=99"},
+            {"current": 98, "total": 100, "expected": [1, "...", 93, 94, 95, 96, 97, 98, 99, 100], "description": "100 pages, current=98"},
+            
+            # Large page counts - current page in middle
+            {"current": 50, "total": 100, "expected": [1, "...", 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, "...", 100], "description": "100 pages, current=50"},
+            {"current": 25, "total": 100, "expected": [1, "...", 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, "...", 100], "description": "100 pages, current=25"},
+            {"current": 75, "total": 100, "expected": [1, "...", 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, "...", 100], "description": "100 pages, current=75"},
+            
+            # Range connection cases
+            {"current": 4, "total": 20, "expected": [1, 2, 3, 4, 5, 6, 7, 8, 9, "...", 20], "description": "20 pages, current=4 (range includes first)"},
+            {"current": 17, "total": 20, "expected": [1, "...", 12, 13, 14, 15, 16, 17, 18, 19, 20], "description": "20 pages, current=17 (range includes last)"},
+            
+            # Edge cases with invalid inputs
+            {"current": 15, "total": 10, "expected": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], "description": "current > total (graceful handling)"},
+            {"current": 0, "total": 10, "expected": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], "description": "current = 0 (graceful handling)"},
+            {"current": 1, "total": 0, "expected": [], "description": "total = 0 (edge case)"},
+        ]
+        
+        for case in test_cases:
+            with self.subTest(case=case["description"]):
+                result = _get_page_range(case["current"], case["total"])
+                self.assertEqual(
+                    result, 
+                    case["expected"], 
+                    f"Failed for {case['description']}: "
+                    f"_get_page_range({case['current']}, {case['total']}) = {result}, "
+                    f"expected {case['expected']}"
+                )
