@@ -317,13 +317,14 @@ class RedisPanelUtils:
             # This encourages Redis to return approximately the right number of keys per iteration
             scan_count = per_page
             
+            # Perform one Redis SCAN iteration for this page
             current_cursor, partial_keys = redis_conn.scan(
                 cursor=current_cursor, 
                 match=pattern, 
                 count=scan_count
             )
             
-            # Filter and include all keys from this scan iteration
+            # Filter keys from this scan iteration
             page_keys = [k for k in partial_keys if k]
             
             # Sort keys for consistent display
@@ -365,20 +366,10 @@ class RedisPanelUtils:
             # Instead, we focus on "has_more" navigation
             scan_complete = current_cursor == 0
             
-            # If scan is not complete, do a quick look-ahead to see if next page has keys
-            has_more = False
-            if not scan_complete:
-                try:
-                    # Quick peek at next iteration to see if it has keys
-                    peek_cursor, peek_keys = redis_conn.scan(
-                        cursor=current_cursor, 
-                        match=pattern, 
-                        count=1  # Just peek with 1 key to be fast
-                    )
-                    has_more = len(peek_keys) > 0
-                except:
-                    # If peek fails, assume there are more (conservative approach)
-                    has_more = True
+            # Don't show "next" if:
+            # 1. Scan is complete, OR
+            # 2. This page returned no keys (prevents showing empty pages)
+            has_more = not scan_complete and len(page_keys) > 0
             
             # For compatibility with the template, we provide minimal pagination info
             # In cursor-based pagination, we don't have accurate total counts
