@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 
 class Command(BaseCommand):
-    help = "Populate Redis instances with test data for testing"
+    help = "Populate Redis instances with test data for testing, including support for very large collections"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -35,6 +35,23 @@ class Command(BaseCommand):
             type=int,
             default=100,
             help="Number of keys to create (default: 100)",
+        )
+        parser.add_argument(
+            "--large-collections",
+            action="store_true",
+            help="Create some collections with very large numbers of members (hundreds to thousands)",
+        )
+        parser.add_argument(
+            "--large-collection-count",
+            type=int,
+            default=5,
+            help="Number of large collections to create per database (default: 5)",
+        )
+        parser.add_argument(
+            "--max-collection-size",
+            type=int,
+            default=1000,
+            help="Maximum size for large collections (default: 1000)",
         )
 
     def handle(self, *args, **options):
@@ -84,8 +101,11 @@ class Command(BaseCommand):
             else:
                 self.stdout.write(f"  Target databases: {sorted(target_dbs)}")
             self.stdout.write(f"  Keys to create: {options['keys']}")
+            if options["large_collections"]:
+                self.stdout.write(f"  Large collections: {options['large_collection_count']} per database")
+                self.stdout.write(f"  Max collection size: {options['max_collection_size']}")
             self.populate_instance(
-                instance_alias, options["clear"], target_dbs, options["keys"]
+                instance_alias, options["clear"], target_dbs, options["keys"], options
             )
 
         self.stdout.write(
@@ -93,7 +113,7 @@ class Command(BaseCommand):
         )
 
     def populate_instance(
-        self, instance_alias, clear_first=False, target_dbs=None, key_count=100
+        self, instance_alias, clear_first=False, target_dbs=None, key_count=100, options=None
     ):
         if target_dbs is None:
             target_dbs = [0, 1, 2]
@@ -111,7 +131,7 @@ class Command(BaseCommand):
                         self.stdout.write(f"  Cleared database {db}")
 
                     self.stdout.write(f"  Populating database {db}...")
-                    self.create_test_data(redis_conn, db, key_count)
+                    self.create_test_data(redis_conn, db, key_count, options)
                 except Exception as db_error:
                     self.stdout.write(
                         self.style.WARNING(
@@ -124,8 +144,10 @@ class Command(BaseCommand):
                 self.style.ERROR(f"Error populating {instance_alias}: {str(e)}")
             )
 
-    def create_test_data(self, redis_conn, db_num, key_count=100):
+    def create_test_data(self, redis_conn, db_num, key_count=100, options=None):
         """Create random test data up to the specified key count"""
+        if options is None:
+            options = {}
 
         # Key type distribution (percentages)
         string_ratio = 0.70  # 70% strings
@@ -313,6 +335,16 @@ class Command(BaseCommand):
                 )
             created_keys += 1
 
+        # Create large collections if requested
+        large_collections_created = 0
+        if options.get("large_collections", False):
+            large_collection_count = options.get("large_collection_count", 5)
+            max_collection_size = options.get("max_collection_size", 1000)
+            large_collections_created = self.create_large_collections(
+                redis_conn, db_num, large_collection_count, max_collection_size
+            )
+            created_keys += large_collections_created
+
         # Log what was created
         self.stdout.write(f"    Created {created_keys} total keys:")
         self.stdout.write(f"      - {string_count} string keys")
@@ -320,5 +352,145 @@ class Command(BaseCommand):
         self.stdout.write(f"      - {set_count} sets")
         self.stdout.write(f"      - {hash_count} hashes")
         self.stdout.write(f"      - {zset_count} sorted sets")
+        if large_collections_created > 0:
+            self.stdout.write(f"      - {large_collections_created} large collections")
         if ttl_keys > 0:
             self.stdout.write(f"      - {ttl_keys} keys with TTL")
+
+    def create_large_collections(self, redis_conn, db_num, collection_count, max_size):
+        """Create large collections with hundreds to thousands of members"""
+        created_count = 0
+        
+        # Distribute collection types
+        collection_types = ['list', 'set', 'hash', 'zset']
+        collections_per_type = max(1, collection_count // len(collection_types))
+        remaining = collection_count % len(collection_types)
+        
+        for collection_type in collection_types:
+            type_count = collections_per_type + (1 if remaining > 0 else 0)
+            remaining -= 1
+            
+            for i in range(type_count):
+                size = random.randint(max(100, max_size // 10), max_size)
+                
+                if collection_type == 'list':
+                    created_count += self.create_large_list(redis_conn, db_num, i, size)
+                elif collection_type == 'set':
+                    created_count += self.create_large_set(redis_conn, db_num, i, size)
+                elif collection_type == 'hash':
+                    created_count += self.create_large_hash(redis_conn, db_num, i, size)
+                elif collection_type == 'zset':
+                    created_count += self.create_large_zset(redis_conn, db_num, i, size)
+        
+        return created_count
+
+    def create_large_list(self, redis_conn, db_num, index, size):
+        """Create a large list with many items"""
+        list_key = f"large:list:events:{index}:db{db_num}"
+        redis_conn.delete(list_key)  # Clear existing
+        
+        # Use pipeline for better performance
+        pipe = redis_conn.pipeline()
+        
+        # Create realistic event log entries
+        event_types = ['login', 'logout', 'purchase', 'view', 'click', 'search', 'error', 'warning']
+        user_agents = ['Chrome/91.0', 'Firefox/89.0', 'Safari/14.1', 'Edge/91.0']
+        
+        for i in range(size):
+            event_data = {
+                'timestamp': (datetime.now() - timedelta(seconds=random.randint(0, 86400))).isoformat(),
+                'event_type': random.choice(event_types),
+                'user_id': random.randint(1, 10000),
+                'session_id': f"sess_{random.randint(100000, 999999)}",
+                'ip': f"192.168.{random.randint(1, 255)}.{random.randint(1, 255)}",
+                'user_agent': random.choice(user_agents),
+                'page': f"/page/{random.randint(1, 100)}"
+            }
+            pipe.lpush(list_key, json.dumps(event_data))
+            
+            # Execute in batches for memory efficiency
+            if i % 1000 == 0:
+                pipe.execute()
+                pipe = redis_conn.pipeline()
+        
+        # Execute remaining commands
+        pipe.execute()
+        
+        self.stdout.write(f"      Created large list '{list_key}' with {size} events")
+        return 1
+
+    def create_large_set(self, redis_conn, db_num, index, size):
+        """Create a large set with many unique items"""
+        set_key = f"large:set:unique_visitors:{index}:db{db_num}"
+        redis_conn.delete(set_key)  # Clear existing
+        
+        # Use pipeline for better performance
+        pipe = redis_conn.pipeline()
+        
+        # Generate unique visitor IDs
+        batch_size = 1000
+        for i in range(0, size, batch_size):
+            batch_items = []
+            for j in range(min(batch_size, size - i)):
+                visitor_id = f"visitor_{random.randint(1, 1000000)}_{i}_{j}"
+                batch_items.append(visitor_id)
+            
+            if batch_items:
+                pipe.sadd(set_key, *batch_items)
+                pipe.execute()
+                pipe = redis_conn.pipeline()
+        
+        self.stdout.write(f"      Created large set '{set_key}' with {size} unique visitors")
+        return 1
+
+    def create_large_hash(self, redis_conn, db_num, index, size):
+        """Create a large hash with many fields"""
+        hash_key = f"large:hash:user_metrics:{index}:db{db_num}"
+        redis_conn.delete(hash_key)  # Clear existing
+        
+        # Use pipeline for better performance
+        pipe = redis_conn.pipeline()
+        
+        # Create user metrics
+        batch_size = 1000
+        for i in range(0, size, batch_size):
+            batch_data = {}
+            for j in range(min(batch_size, size - i)):
+                user_id = f"user_{i}_{j}"
+                batch_data[f"{user_id}:views"] = random.randint(1, 1000)
+                batch_data[f"{user_id}:clicks"] = random.randint(1, 100)
+                batch_data[f"{user_id}:time_spent"] = random.randint(60, 7200)
+                batch_data[f"{user_id}:last_seen"] = str(int(datetime.now().timestamp()))
+            
+            if batch_data:
+                pipe.hset(hash_key, mapping=batch_data)
+                pipe.execute()
+                pipe = redis_conn.pipeline()
+        
+        self.stdout.write(f"      Created large hash '{hash_key}' with {size * 4} fields")
+        return 1
+
+    def create_large_zset(self, redis_conn, db_num, index, size):
+        """Create a large sorted set with many scored items"""
+        zset_key = f"large:zset:global_leaderboard:{index}:db{db_num}"
+        redis_conn.delete(zset_key)  # Clear existing
+        
+        # Use pipeline for better performance
+        pipe = redis_conn.pipeline()
+        
+        # Create global leaderboard
+        batch_size = 1000
+        for i in range(0, size, batch_size):
+            batch_data = {}
+            for j in range(min(batch_size, size - i)):
+                player_name = f"player_{i}_{j}_{random.randint(1000, 9999)}"
+                score = random.randint(1, 1000000)
+                batch_data[player_name] = score
+            
+            if batch_data:
+                pipe.zadd(zset_key, batch_data)
+                pipe.execute()
+                pipe = redis_conn.pipeline()
+        
+        self.stdout.write(f"      Created large sorted set '{zset_key}' with {size} players")
+        return 1
