@@ -149,11 +149,7 @@
                         <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
                         <option value="200" {% if per_page == 200 %}selected{% endif %}>200</option>
                     </select>
-                    {% if use_cursor_pagination %}
-                        <input type="hidden" name="cursor" value="{{ current_cursor }}">
-                    {% else %}
-                        <input type="hidden" name="page" value="{{ current_page }}">
-                    {% endif %}
+                    {# Do not include current page/cursor when changing per_page - this resets to beginning #}
                 </form>
                 {% if use_cursor_pagination %}
                     <span style="margin-left: 20px; color: #666;">{% trans 'Using cursor-based pagination for better performance' %}</span>
