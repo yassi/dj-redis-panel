@@ -228,7 +228,10 @@ def key_detail(request, instance_alias, db_number, key_name):
     use_cursor_pagination = RedisPanelUtils.is_feature_enabled(instance_alias, "CURSOR_PAGINATED_COLLECTIONS")
     
     # Get pagination parameters
-    per_page = int(request.GET.get('per_page', 50))
+    try:
+        per_page = int(request.GET.get('per_page', 50))
+    except (ValueError, TypeError):
+        per_page = 50
     
     if per_page not in [25, 50, 100, 200]:
         per_page = 50
