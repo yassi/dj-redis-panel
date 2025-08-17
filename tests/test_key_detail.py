@@ -369,6 +369,138 @@ class TestKeyDetailView(RedisTestCase):
         self.assertIsInstance(first_item, tuple)  # (member, score)
         self.assertEqual(len(first_item), 2)
 
+    def test_key_detail_pagination_large_collections_cursor_based(self):
+        """Test cursor-based pagination for all large collection types (falls back to page-based if not enabled)."""
+        # First, temporarily enable cursor pagination for collections on test_redis
+        from django.test import override_settings
+        
+        # Override settings to enable cursor pagination for collections
+        cursor_settings = {
+            "ALLOW_KEY_DELETE": True,
+            "ALLOW_KEY_EDIT": True,
+            "ALLOW_TTL_UPDATE": True,
+            "CURSOR_PAGINATED_COLLECTIONS": True,  # Enable cursor pagination for collections
+            "INSTANCES": {
+                "test_redis": {
+                    "description": "Test Redis Instance",
+                    "host": "127.0.0.1",
+                    "port": 6379,
+                    "db": 15,
+                    "features": {
+                        "ALLOW_KEY_DELETE": True,
+                        "ALLOW_KEY_EDIT": True,
+                        "ALLOW_TTL_UPDATE": True,
+                        "CURSOR_PAGINATED_COLLECTIONS": True,
+                    },
+                },
+                "test_redis_no_features": {
+                    "description": "Test Redis Instance - No Features",
+                    "host": "127.0.0.1",
+                    "port": 6379,
+                    "db": 14,
+                    "features": {
+                        "ALLOW_KEY_DELETE": False,
+                        "ALLOW_KEY_EDIT": False,
+                        "ALLOW_TTL_UPDATE": False,
+                        "CURSOR_PAGINATED_SCAN": True,
+                    },
+                },
+                "test_redis_url": {
+                    "description": "Test Redis from URL",
+                    "url": "redis://127.0.0.1:6379/13",
+                },
+            }
+        }
+        
+        with override_settings(DJ_REDIS_PANEL_SETTINGS=cursor_settings):
+            # Test data: (key_suffix, key_type, create_function, total_items, per_page, special_validation)
+            test_cases = [
+                ('list_cursor', 'list', self._create_large_list, 150, 50, None),
+                ('set_cursor', 'set', self._create_large_set, 150, 25, None),
+                ('hash_cursor', 'hash', self._create_large_hash, 150, 25, None),
+                ('zset_cursor', 'zset', self._create_large_zset, 150, 25, self._validate_zset_scores),
+            ]
+            
+            for key_suffix, expected_type, create_func, total_items, per_page, validator in test_cases:
+                with self.subTest(key_type=expected_type, total_items=total_items, per_page=per_page):
+                    key_name = f'test:large_{key_suffix}'
+                    
+                    # Create the collection
+                    create_func(key_name, total_items)
+                    
+                    try:
+                        # Test first cursor page (cursor=0)
+                        url = reverse('dj_redis_panel:key_detail', args=['test_redis', 15, key_name])
+                        response = self.client.get(url, {'per_page': per_page, 'cursor': 0})
+                        
+                        self.assertEqual(response.status_code, 200)
+                        key_data = response.context['key_data']
+                        
+                        # Should be paginated with cursor-based pagination
+                        self.assertTrue(key_data.get('is_paginated', False))
+                        self.assertTrue(response.context['is_paginated'])
+                        self.assertEqual(key_data['type'], expected_type)
+                        
+                        # Debug: Check if cursor pagination is enabled
+                        use_cursor_pagination = response.context.get('use_cursor_pagination', False)
+                        if use_cursor_pagination:
+                            # Cursor-based pagination tests
+                            self.assertEqual(response.context['current_cursor'], 0)
+                            self.assertIn('next_cursor', response.context)
+                        else:
+                            # Fall back to page-based pagination tests
+                            self.assertEqual(response.context['current_page'], 1)
+                            self.assertIn('total_pages', response.context)
+                        
+                        # Should have data (amount may vary with cursor pagination)
+                        self.assertGreater(len(key_data['value']), 0)
+                        
+                        # Run type-specific validation if provided
+                        if validator:
+                            validator(key_data['value'])
+                        
+                        # Test navigation if has_more/has_next is True
+                        if response.context.get('has_more', False) or response.context.get('has_next', False):
+                            if use_cursor_pagination:
+                                # Cursor-based navigation
+                                next_cursor = response.context['next_cursor']
+                                self.assertIsNotNone(next_cursor)
+                                self.assertNotEqual(next_cursor, 0)  # Should have advanced
+                                
+                                # Test second cursor page
+                                response2 = self.client.get(url, {'per_page': per_page, 'cursor': next_cursor})
+                                self.assertEqual(response2.status_code, 200)
+                                key_data2 = response2.context['key_data']
+                                
+                                # Should have different data than first page
+                                self.assertGreater(len(key_data2['value']), 0)
+                                self.assertEqual(response2.context['current_cursor'], next_cursor)
+                                
+                                # For cursor pagination, we may or may not have range info
+                                if response.context.get('range_start') and response.context.get('range_end'):
+                                    # Lists and sorted sets should have range info
+                                    self.assertIn(expected_type, ['list', 'zset'])
+                                    self.assertGreater(response.context['range_start'], 0)
+                                    self.assertGreater(response.context['range_end'], response.context['range_start'])
+                                else:
+                                    # Sets and hashes use scan cursors without exact ranges
+                                    self.assertIn(expected_type, ['set', 'hash'])
+                            else:
+                                # Page-based navigation
+                                next_page = response.context.get('next_page', 2)
+                                
+                                # Test second page
+                                response2 = self.client.get(url, {'per_page': per_page, 'page': next_page})
+                                self.assertEqual(response2.status_code, 200)
+                                key_data2 = response2.context['key_data']
+                                
+                                # Should have different data than first page
+                                self.assertGreater(len(key_data2['value']), 0)
+                                self.assertEqual(response2.context['current_page'], next_page)
+                        
+                    finally:
+                        self.redis_conn.delete(key_name)
+
     def test_key_detail_pagination_per_page_reset(self):
         """Test that changing per_page resets pagination to beginning."""
         # Create a large list
