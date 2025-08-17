@@ -224,7 +224,41 @@ def key_detail(request, instance_alias, db_number, key_name):
     allow_key_edit = RedisPanelUtils.is_feature_enabled(instance_alias, "ALLOW_KEY_EDIT")
     allow_ttl_update = RedisPanelUtils.is_feature_enabled(instance_alias, "ALLOW_TTL_UPDATE")
 
-    key_data = RedisPanelUtils.get_key_data(instance_alias, db_number, key_name)
+    # Check if cursor-based pagination is enabled for collections
+    use_cursor_pagination = RedisPanelUtils.is_feature_enabled(instance_alias, "CURSOR_PAGINATED_COLLECTIONS")
+    
+    # Get pagination parameters
+    per_page = int(request.GET.get('per_page', 50))
+    
+    if per_page not in [25, 50, 100, 200]:
+        per_page = 50
+
+    if use_cursor_pagination:
+        # Use cursor-based pagination
+        cursor = request.GET.get('cursor', '0')
+        try:
+            cursor = int(cursor)
+            if cursor < 0:
+                cursor = 0
+        except (ValueError, TypeError):
+            cursor = 0
+        
+        key_data = RedisPanelUtils.get_cursor_paginated_key_data(
+            instance_alias, db_number, key_name, cursor, per_page, pagination_threshold=100
+        )
+    else:
+        # Use page-based pagination
+        page = request.GET.get('page', 1)
+        try:
+            page = int(page)
+            if page < 1:
+                page = 1
+        except (ValueError, TypeError):
+            page = 1
+        
+        key_data = RedisPanelUtils.get_paginated_key_data(
+            instance_alias, db_number, key_name, page, per_page, pagination_threshold=100
+        )
     
     # Handle key not found
     if not key_data["exists"]:
@@ -251,8 +285,26 @@ def key_detail(request, instance_alias, db_number, key_name):
                     if key_data["type"] == "string":
                         redis_conn.set(key_name, new_value)
                         success_message = "Key value updated successfully"
-                        # Refresh key data after update
+                        # Refresh key data after update (use non-paginated for editing)
                         key_data = RedisPanelUtils.get_key_data(instance_alias, db_number, key_name)
+                        # Add pagination info back for template compatibility
+                        if use_cursor_pagination:
+                            key_data.update({
+                                "is_paginated": False,
+                                "cursor": key_data.get("cursor", 0),
+                                "per_page": per_page,
+                                "has_more": False,
+                                "pagination_type": "cursor"
+                            })
+                        else:
+                            key_data.update({
+                                "is_paginated": False,
+                                "page": key_data.get("page", 1),
+                                "per_page": per_page,
+                                "total_pages": 0,
+                                "has_more": False,
+                                "pagination_type": "page"
+                            })
                     else:
                         error_message = f"Direct editing not supported for {key_data['type']} keys"
                 else:
@@ -276,6 +328,24 @@ def key_detail(request, instance_alias, db_number, key_name):
                         # Refresh key data after TTL update
                         if not error_message:
                             key_data = RedisPanelUtils.get_key_data(instance_alias, db_number, key_name)
+                            # Add pagination info back for template compatibility
+                            if use_cursor_pagination:
+                                key_data.update({
+                                    "is_paginated": False,
+                                    "cursor": key_data.get("cursor", 0),
+                                    "per_page": per_page,
+                                    "has_more": False,
+                                    "pagination_type": "cursor"
+                                })
+                            else:
+                                key_data.update({
+                                    "is_paginated": False,
+                                    "page": key_data.get("page", 1),
+                                    "per_page": per_page,
+                                    "total_pages": 0,
+                                    "has_more": False,
+                                    "pagination_type": "page"
+                                })
                     except ValueError:
                         error_message = "TTL must be a valid number"
                 else:
@@ -312,5 +382,27 @@ def key_detail(request, instance_alias, db_number, key_name):
         "allow_key_delete": allow_key_delete,
         "allow_key_edit": allow_key_edit,
         "allow_ttl_update": allow_ttl_update,
+        # Pagination context
+        "per_page": per_page,
+        "is_paginated": key_data.get("is_paginated", False),
+        "showing_count": key_data.get("showing_count", 0),
+        "has_more": key_data.get("has_more", False),
+        "use_cursor_pagination": use_cursor_pagination,
+        "pagination_type": key_data.get("pagination_type", "page"),
+        # Page-based pagination context
+        "current_page": key_data.get("page", 1),
+        "total_pages": key_data.get("total_pages", 0),
+        "has_previous": key_data.get("page", 1) > 1 if not use_cursor_pagination else False,
+        "has_next": key_data.get("has_more", False),
+        "previous_page": key_data.get("page", 1) - 1 if key_data.get("page", 1) > 1 and not use_cursor_pagination else None,
+        "next_page": key_data.get("page", 1) + 1 if key_data.get("has_more", False) and not use_cursor_pagination else None,
+        "start_index": key_data.get("start_index", 0),
+        "end_index": key_data.get("end_index", 0),
+        "page_range": _get_page_range(key_data.get("page", 1), key_data.get("total_pages", 0)) if not use_cursor_pagination else [],
+        # Cursor-based pagination context
+        "current_cursor": key_data.get("cursor", 0),
+        "next_cursor": key_data.get("next_cursor", 0),
+        "range_start": key_data.get("range_start"),
+        "range_end": key_data.get("range_end"),
     }
     return render(request, "admin/dj_redis_panel/key_detail.html", context)

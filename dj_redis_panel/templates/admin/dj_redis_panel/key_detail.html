@@ -138,149 +138,44 @@
             <h2>{% trans 'Key Value' %}</h2>
             <br>
             
-            {% if key_data.type == "string" %}
-            <!-- String value editing -->
-             <h3>{% trans 'String Value' %}</h3>
-             <br>
-            {% if allow_key_edit %}
-            <form method="post" class="value-form">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="update_value">
-                <div class="form-row">
-                    <div class="field-box">
-                        <textarea id="new_value" name="new_value" class="string-value-field" rows="5">{{ key_data.value }}</textarea>
-                        <div class="help">{% trans 'Edit the string value directly.' %}</div>
-                    </div>
-                    <div class="submit-row">
-                        <input type="submit" value="{% trans 'Update Value' %}" class="default">
-                    </div>
-                </div>
-            </form>
-            {% else %}
-            <div class="form-row">
-                <div class="field-box">
-                    <textarea class="string-value-field" rows="5" readonly disabled>{{ key_data.value }}</textarea>
-                    <div class="help">{% trans 'Value editing is disabled for this instance.' %}</div>
-                </div>
-                <div class="submit-row">
-                    <input type="button" value="{% trans 'Value Edit Disabled' %}" class="default" disabled>
-                </div>
+            {% if is_paginated and key_data.type != "string" %}
+            <!-- Per-page selector for collections -->
+            <div class="pagination-controls" style="margin-bottom: 20px;">
+                <form method="get" style="display: inline;">
+                    <label for="per_page_select">{% trans 'Items per page:' %}</label>
+                    <select id="per_page_select" name="per_page" onchange="this.form.submit()">
+                        <option value="25" {% if per_page == 25 %}selected{% endif %}>25</option>
+                        <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                        <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+                        <option value="200" {% if per_page == 200 %}selected{% endif %}>200</option>
+                    </select>
+                    {% if use_cursor_pagination %}
+                        <input type="hidden" name="cursor" value="{{ current_cursor }}">
+                    {% else %}
+                        <input type="hidden" name="page" value="{{ current_page }}">
+                    {% endif %}
+                </form>
+                {% if use_cursor_pagination %}
+                    <span style="margin-left: 20px; color: #666;">{% trans 'Using cursor-based pagination for better performance' %}</span>
+                {% endif %}
             </div>
             {% endif %}
+            <br>
+            
+            {% if key_data.type == "string" %}
+            {% include "admin/dj_redis_panel/key_detail_value_string.html" %}
             
             {% elif key_data.type == "list" %}
-            <!-- List display -->
-            <div class="key-value-display">
-                <h3>{% trans 'List Elements' %} ({{ key_data.size }} {% trans 'items' %})</h3>
-                {% if key_data.value %}
-                <table class="key-value-table">
-                    <thead>
-                        <tr>
-                            <th>{% trans 'Index' %}</th>
-                            <th>{% trans 'Value' %}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in key_data.value %}
-                        <tr>
-                            <td><code>{{ forloop.counter0 }}</code></td>
-                            <td><code>{{ item }}</code></td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                {% else %}
-                <p class="quiet">{% trans 'List is empty' %}</p>
-                {% endif %}
-                <div class="help">
-                    {% trans 'List editing is not supported in this interface. Use Redis CLI or other tools for complex list operations.' %}
-                </div>
-            </div>
+            {% include "admin/dj_redis_panel/key_detail_value_list.html" %}
             
             {% elif key_data.type == "set" %}
-            <!-- Set display -->
-            <div class="key-value-display">
-                <h3>{% trans 'Set Members' %} ({{ key_data.size }} {% trans 'items' %})</h3>
-                {% if key_data.value %}
-                <table class="key-value-table">
-                    <thead>
-                        <tr>
-                            <th>{% trans 'Member' %}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for member in key_data.value %}
-                        <tr>
-                            <td><code>{{ member }}</code></td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                {% else %}
-                <p class="quiet">{% trans 'Set is empty' %}</p>
-                {% endif %}
-                <div class="help">
-                    {% trans 'Set editing is not supported in this interface. Use Redis CLI or other tools for complex set operations.' %}
-                </div>
-            </div>
+            {% include "admin/dj_redis_panel/key_detail_value_set.html" %}
             
             {% elif key_data.type == "zset" %}
-            <!-- Sorted Set display -->
-            <div class="key-value-display">
-                <h3>{% trans 'Sorted Set Members' %} ({{ key_data.size }} {% trans 'items' %})</h3>
-                {% if key_data.value %}
-                <table class="key-value-table">
-                    <thead>
-                        <tr>
-                            <th>{% trans 'Member' %}</th>
-                            <th>{% trans 'Score' %}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for member, score in key_data.value %}
-                        <tr>
-                            <td><code>{{ member }}</code></td>
-                            <td><code>{{ score }}</code></td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                {% else %}
-                <p class="quiet">{% trans 'Sorted set is empty' %}</p>
-                {% endif %}
-                <div class="help">
-                    {% trans 'Sorted set editing is not supported in this interface. Use Redis CLI or other tools for complex sorted set operations.' %}
-                </div>
-            </div>
+            {% include "admin/dj_redis_panel/key_detail_value_zset.html" %}
             
             {% elif key_data.type == "hash" %}
-            <!-- Hash display -->
-            <div class="key-value-display">
-                <h3>{% trans 'Hash Fields' %} ({{ key_data.size }} {% trans 'fields' %})</h3>
-                {% if key_data.value %}
-                <table class="key-value-table">
-                    <thead>
-                        <tr>
-                            <th>{% trans 'Field' %}</th>
-                            <th>{% trans 'Value' %}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for field, value in key_data.value.items %}
-                        <tr>
-                            <td><code>{{ field }}</code></td>
-                            <td><code>{{ value }}</code></td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                {% else %}
-                <p class="quiet">{% trans 'Hash is empty' %}</p>
-                {% endif %}
-                <div class="help">
-                    {% trans 'Hash editing is not supported in this interface. Use Redis CLI or other tools for complex hash operations.' %}
-                </div>
-            </div>
+            {% include "admin/dj_redis_panel/key_detail_value_hash.html" %}
             
             {% else %}
             <div class="key-value-display">

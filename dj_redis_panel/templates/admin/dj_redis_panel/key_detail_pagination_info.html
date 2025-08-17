@@ -1,0 +1,20 @@
+{% load i18n %}
+{# Pagination info display (without navigation controls) #}
+
+{% if use_cursor_pagination %}
+    {% if range_start and range_end %}
+        <p class="pagination-info">
+            {% blocktrans with start=range_start end=range_end total=key_data.size %}Showing {{ collection_type|default:"items" }} {{ start }} - {{ end }} of {{ total }}{% endblocktrans %}
+        </p>
+    {% else %}
+        <p class="pagination-info">
+            {% blocktrans with count=showing_count total=key_data.size cursor=current_cursor %}Showing {{ count }} of {{ total }} {{ collection_type|default:"items" }} (cursor: {{ cursor }}){% endblocktrans %}
+        </p>
+    {% endif %}
+{% else %}
+    {% if total_pages > 1 %}
+        <p class="pagination-info">
+            {% blocktrans with page=current_page total_pages=total_pages start=start_index end=end_index total=key_data.size %}Page {{ page }} of {{ total_pages }} - Showing {{ collection_type|default:"items" }} {{ start }} - {{ end }} of {{ total }}{% endblocktrans %}
+        </p>
+    {% endif %}
+{% endif %}
