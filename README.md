@@ -129,6 +129,7 @@ DJ_REDIS_PANEL_SETTINGS = {
     "ALLOW_KEY_EDIT": True,
     "ALLOW_TTL_UPDATE": True,
     "CURSOR_PAGINATED_SCAN": False,
+    "CURSOR_PAGINATED_COLLECTIONS": False,
     
     "INSTANCES": {
         "default": {
@@ -193,6 +194,8 @@ python manage.py createsuperuser  # If you don't have an admin user
 | `ALLOW_KEY_EDIT` | `True` | Allow editing of key values |
 | `ALLOW_TTL_UPDATE` | `True` | Allow updating key TTL (expiration) |
 | `CURSOR_PAGINATED_SCAN` | `False` | Use cursor-based pagination instead of page-based |
+| `CURSOR_PAGINATED_COLLECTIONS` | `False` | Use cursor based pagination for key values like lists and hashs |
+
 
 ### Instance Configuration
 
@@ -230,6 +233,7 @@ Feature flags can be set globally and overridden per instance:
 - **`ALLOW_KEY_EDIT`**: Controls whether key values can be modified
 - **`ALLOW_TTL_UPDATE`**: Controls whether key expiration can be updated
 - **`CURSOR_PAGINATED_SCAN`**: Chooses pagination method (cursor vs. page-based)
+- **`CURSOR_PAGINATED_COLLECTIONS`**: Chooses pagination method for looking at key values
 
 ## License
 

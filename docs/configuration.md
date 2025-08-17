@@ -14,6 +14,8 @@ DJ_REDIS_PANEL_SETTINGS = {
     "ALLOW_KEY_EDIT": True,
     "ALLOW_TTL_UPDATE": True,
     "CURSOR_PAGINATED_SCAN": False,
+    "CURSOR_PAGINATED_COLLECTIONS": False,
+    ""
     
     # Redis instances configuration
     "INSTANCES": {
@@ -32,6 +34,7 @@ These settings apply to all Redis instances unless overridden at the instance le
 | `ALLOW_KEY_EDIT` | `True` | Allow editing of key values |
 | `ALLOW_TTL_UPDATE` | `True` | Allow updating key TTL (expiration) |
 | `CURSOR_PAGINATED_SCAN` | `False` | Use cursor-based pagination instead of page-based |
+| `CURSOR_PAGINATED_COLLECTIONS` | `False` | Use cursor based pagination for key values like lists and hashs |
 
 ### Feature Flags Details
 
@@ -68,6 +71,17 @@ Controls the pagination method for browsing keys.
 
 !!! tip "Performance"
     Use cursor-based pagination (`True`) for Redis instances with many keys for better performance.
+
+#### `CURSOR_PAGINATED_COLLECTIONS`
+
+Controls the pagination method for key values such as lists, hashes, and sets
+
+- **`True`**: Uses cursor to paginate across large collection based values
+- **`False`**: Uses traditional page-based pagination
+
+!!! tip "Performance"
+    For very large collections (e.g. keeping a very large leader board) use the cursor paginated
+    method in order perform too many expensive queries on your instance.
 
 ## Instance Configuration
 
