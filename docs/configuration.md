@@ -14,9 +14,8 @@ DJ_REDIS_PANEL_SETTINGS = {
     "ALLOW_KEY_EDIT": True,
     "ALLOW_TTL_UPDATE": True,
     "CURSOR_PAGINATED_SCAN": False,
+    "CURSOR_PAGINATED_SCAN": False,
     "CURSOR_PAGINATED_COLLECTIONS": False,
-    ""
-    
     # Redis instances configuration
     "INSTANCES": {
         # ... instance configurations
@@ -34,7 +33,7 @@ These settings apply to all Redis instances unless overridden at the instance le
 | `ALLOW_KEY_EDIT` | `True` | Allow editing of key values |
 | `ALLOW_TTL_UPDATE` | `True` | Allow updating key TTL (expiration) |
 | `CURSOR_PAGINATED_SCAN` | `False` | Use cursor-based pagination instead of page-based |
-| `CURSOR_PAGINATED_COLLECTIONS` | `False` | Use cursor based pagination for key values like lists and hashs |
+| `CURSOR_PAGINATED_COLLECTIONS` | `False` | Use cursor-based pagination for key values like lists and hashes |
 
 ### Feature Flags Details
 
