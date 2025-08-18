@@ -198,18 +198,15 @@ class RedisTestCase(TestCase):
                     "description": "Test Redis from URL",
                     "url": "redis://127.0.0.1:6379/13",  # Use test database 13
                 },
-                "test_redis_cursor": {
-                    "description": "Test Redis Instance - Cursor Pagination",
-                    "host": "127.0.0.1",
-                    "port": 6379,
-                    "db": 12,  # Use test database 12
-                    "features": {
-                        "ALLOW_KEY_DELETE": True,
-                        "ALLOW_KEY_EDIT": True,
-                        "ALLOW_TTL_UPDATE": True,
-                        "CURSOR_PAGINATED_COLLECTIONS": True,
-                    },
-                },
+ def cleanup_test_databases(self):
+     """Clean up test Redis databases."""
+    test_dbs = [12, 13, 14, 15]
+     for db_num in test_dbs:
+         test_conn = redis.Redis(host='127.0.0.1', port=6379, db=db_num, decode_responses=True)
+         try:
+             test_conn.flushdb()
+         except redis.ConnectionError:
+             pass  # Ignore connection errors during cleanup
             }
         }
     
