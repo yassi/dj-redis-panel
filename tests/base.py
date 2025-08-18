@@ -74,7 +74,7 @@ class RedisTestCase(TestCase):
     
     def cleanup_test_databases(self):
         """Clean up test Redis databases."""
-        test_dbs = [13, 14, 15]
+        test_dbs = [12, 13, 14, 15]
         for db_num in test_dbs:
             test_conn = redis.Redis(host='127.0.0.1', port=6379, db=db_num, decode_responses=True)
             try:
