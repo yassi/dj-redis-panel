@@ -396,6 +396,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#cursor_paginated_collections" class="md-nav__link">
+    CURSOR_PAGINATED_COLLECTIONS
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -768,6 +775,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#cursor_paginated_collections" class="md-nav__link">
+    CURSOR_PAGINATED_COLLECTIONS
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -943,7 +957,7 @@
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="s2">&quot;ALLOW_KEY_EDIT&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="s2">&quot;ALLOW_TTL_UPDATE&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="s2">&quot;CURSOR_PAGINATED_SCAN&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="s2">&quot;CURSOR_PAGINATED_COLLECTIONS&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="c1"># Redis instances configuration</span>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="s2">&quot;INSTANCES&quot;</span><span class="p">:</span> <span class="p">{</span>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        <span class="c1"># ... instance configurations</span>
@@ -981,6 +995,11 @@
 <td><code>False</code></td>
 <td>Use cursor-based pagination instead of page-based</td>
 </tr>
+<tr>
+<td><code>CURSOR_PAGINATED_COLLECTIONS</code></td>
+<td><code>False</code></td>
+<td>Use cursor-based pagination for key values like lists and hashes</td>
+</tr>
 </tbody>
 </table>
 <h3 id="feature-flags-details">Feature Flags Details</h3>
@@ -1015,6 +1034,17 @@
 <div class="admonition tip">
 <p class="admonition-title">Performance</p>
 <p>Use cursor-based pagination (<code>True</code>) for Redis instances with many keys for better performance.</p>
+</div>
+<h4 id="cursor_paginated_collections"><code>CURSOR_PAGINATED_COLLECTIONS</code></h4>
+<p>Controls the pagination method for key values such as lists, hashes, and sets</p>
+<ul>
+<li><strong><code>True</code></strong>: Uses cursor to paginate across large collection based values</li>
+<li><strong><code>False</code></strong>: Uses traditional page-based pagination</li>
+</ul>
+<div class="admonition tip">
+<p class="admonition-title">Performance</p>
+<p>For very large collections (e.g. keeping a very large leader board) use the cursor paginated
+method in order perform too many expensive queries on your instance.</p>
 </div>
 <h2 id="instance-configuration">Instance Configuration</h2>
 <p>Each Redis instance is configured under the <code>INSTANCES</code> key. You can define multiple instances with different settings.</p>
