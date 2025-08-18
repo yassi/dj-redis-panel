@@ -480,21 +480,35 @@ class RedisPanelUtils:
         instance_alias: str, 
         db_number: int, 
         key_name: str, 
-        page: int = 1, 
+        page: int = None,
+        cursor: int = None,
         per_page: int = 50,
         pagination_threshold: int = 100
     ) -> Dict[str, Any]:
         """
         Get detailed information about a specific Redis key with pagination support for collections.
-        pagination is page index based (e.g. page 1,2, etc.) This makes it neccessary to get the
-        entire collection first, then paginate.
+        
+        Supports both page-based and cursor-based pagination:
+        - Page-based: pass page parameter (e.g. page=1, page=2, etc.)
+        - Cursor-based: pass cursor parameter (e.g. cursor=0, cursor=123, etc.)
+        
+        If neither page nor cursor is provided, defaults to page-based pagination with page=1.
         """
         try:
+            # Determine pagination type and set defaults
+            if cursor is not None:
+                use_cursor_pagination = True
+                cursor = max(0, cursor)  # Ensure cursor is non-negative
+            else:
+                use_cursor_pagination = False
+                page = max(1, page or 1)  # Ensure page is at least 1
+            
             redis_conn = cls.get_redis_connection(instance_alias)
             redis_conn.select(db_number)
             
+            # Handle non-existent key
             if not redis_conn.exists(key_name):
-                return {
+                base_response = {
                     "name": key_name,
                     "type": None,
                     "ttl": None,
@@ -503,22 +517,35 @@ class RedisPanelUtils:
                     "exists": False,
                     "error": None,
                     "is_paginated": False,
-                    "page": page,
-                    "per_page": per_page,
-                    "total_pages": 0,
-                    "has_more": False
                 }
+                
+                if use_cursor_pagination:
+                    base_response.update({
+                        "cursor": cursor,
+                        "next_cursor": 0,
+                        "has_more": False,
+                        "showing_count": 0
+                    })
+                else:
+                    base_response.update({
+                        "page": page,
+                        "per_page": per_page,
+                        "total_pages": 0,
+                        "has_more": False
+                    })
+                
+                return base_response
             
             key_type = redis_conn.type(key_name)
             ttl = redis_conn.ttl(key_name)
             
-            # Get total size first
+            # Get collection size
             key_size = 0
             if key_type == "string":
                 key_value = redis_conn.get(key_name) or ""
                 key_size = len(str(key_value).encode("utf-8"))
-                # Strings are not paginated
-                return {
+                # Strings are never paginated
+                base_response = {
                     "name": key_name,
                     "type": key_type,
                     "ttl": ttl if ttl > 0 else None,
@@ -527,11 +554,25 @@ class RedisPanelUtils:
                     "exists": True,
                     "error": None,
                     "is_paginated": False,
-                    "page": page,
-                    "per_page": per_page,
-                    "total_pages": 0,
-                    "has_more": False
                 }
+                
+                if use_cursor_pagination:
+                    base_response.update({
+                        "cursor": cursor,
+                        "next_cursor": 0,
+                        "has_more": False,
+                        "showing_count": len(str(key_value))
+                    })
+                else:
+                    base_response.update({
+                        "page": page,
+                        "per_page": per_page,
+                        "total_pages": 0,
+                        "has_more": False
+                    })
+                
+                return base_response
+                
             elif key_type == "list":
                 key_size = redis_conn.llen(key_name)
             elif key_type == "set":
@@ -547,74 +588,156 @@ class RedisPanelUtils:
             if not should_paginate:
                 # Use the original method for small collections
                 original_data = cls.get_key_data(instance_alias, db_number, key_name)
-                original_data.update({
-                    "is_paginated": False,
-                    "page": page,
-                    "per_page": per_page,
-                    "total_pages": 1 if key_size > 0 else 0,
-                    "has_more": False
-                })
+                original_data.update({"is_paginated": False})
+                
+                if use_cursor_pagination:
+                    original_data.update({
+                        "cursor": cursor,
+                        "next_cursor": 0,
+                        "has_more": False,
+                        "showing_count": key_size
+                    })
+                else:
+                    original_data.update({
+                        "page": page,
+                        "per_page": per_page,
+                        "total_pages": 1 if key_size > 0 else 0,
+                        "has_more": False
+                    })
+                
                 return original_data
             
             # Handle paginated collections
-            total_pages = (key_size + per_page - 1) // per_page if key_size > 0 else 1
-            start_index = (page - 1) * per_page
-            end_index = start_index + per_page - 1  # Redis uses inclusive end indices
-            
             key_value = None
             
-            if key_type == "list":
-                # Use LRANGE for lists
-                key_value = redis_conn.lrange(key_name, start_index, end_index)
+            if use_cursor_pagination:
+                # Cursor-based pagination
+                next_cursor = 0
+                has_more = False
+                showing_count = 0
                 
-            elif key_type == "set":
-                # For sets, we need to use SSCAN for pagination
-                cursor = 0
-                all_members = []
-                # Get all members first (sets don't have inherent ordering)
-                while True:
-                    cursor, members = redis_conn.sscan(key_name, cursor=cursor, count=1000)
-                    all_members.extend(members)
-                    if cursor == 0:
-                        break
+                if key_type == "list":
+                    # For lists, cursor represents the start index
+                    start_index = cursor
+                    end_index = start_index + per_page - 1
+                    key_value = redis_conn.lrange(key_name, start_index, end_index)
+                    showing_count = len(key_value)
+                    next_cursor = start_index + showing_count
+                    has_more = next_cursor < key_size
+                    
+                elif key_type == "set":
+                    # Use SSCAN for cursor-based set iteration
+                    scan_cursor, members = redis_conn.sscan(key_name, cursor=cursor, count=per_page)
+                    key_value = list(members)
+                    showing_count = len(key_value)
+                    next_cursor = scan_cursor
+                    has_more = scan_cursor != 0
+                    
+                elif key_type == "zset":
+                    # For sorted sets, cursor represents the start index (already sorted by score)
+                    start_index = cursor
+                    end_index = start_index + per_page - 1
+                    key_value = redis_conn.zrange(key_name, start_index, end_index, withscores=True)
+                    showing_count = len(key_value)
+                    next_cursor = start_index + showing_count
+                    has_more = next_cursor < key_size
+                    
+                elif key_type == "hash":
+                    # Use HSCAN for cursor-based hash iteration
+                    scan_cursor, fields = redis_conn.hscan(key_name, cursor=cursor, count=per_page)
+                    key_value = fields
+                    showing_count = len(key_value)
+                    next_cursor = scan_cursor
+                    has_more = scan_cursor != 0
                 
-                # Sort for consistent pagination
-                all_members.sort()
-                key_value = all_members[start_index:start_index + per_page]
+                # Calculate range information for display
+                if key_type in ["list", "zset"]:
+                    # For lists and sorted sets, cursor is the actual start index
+                    range_start = cursor + 1 if showing_count > 0 else 0
+                    range_end = cursor + showing_count
+                else:
+                    # For sets and hashes using scan cursors, we can't provide exact ranges
+                    range_start = None
+                    range_end = None
                 
-            elif key_type == "zset":
-                # Use ZRANGE for sorted sets (already ordered by score)
-                key_value = redis_conn.zrange(key_name, start_index, end_index, withscores=True)
+                return {
+                    "name": key_name,
+                    "type": key_type,
+                    "ttl": ttl if ttl > 0 else None,
+                    "size": key_size,
+                    "value": key_value,
+                    "exists": True,
+                    "error": None,
+                    "is_paginated": True,
+                    "cursor": cursor,
+                    "next_cursor": next_cursor,
+                    "has_more": has_more,
+                    "showing_count": showing_count,
+                    "start_index": cursor if key_type in ["list", "zset"] else None,
+                    "range_start": range_start,
+                    "range_end": range_end,
+                    "pagination_type": "cursor"
+                }
                 
-            elif key_type == "hash":
-                # For hashes, get all fields first then paginate
-                all_fields = redis_conn.hgetall(key_name)
-                # Sort fields for consistent pagination
-                sorted_fields = sorted(all_fields.items())
-                paginated_fields = sorted_fields[start_index:start_index + per_page]
-                key_value = dict(paginated_fields)
-            
-            return {
-                "name": key_name,
-                "type": key_type,
-                "ttl": ttl if ttl > 0 else None,
-                "size": key_size,
-                "value": key_value,
-                "exists": True,
-                "error": None,
-                "is_paginated": True,
-                "page": page,
-                "per_page": per_page,
-                "total_pages": total_pages,
-                "has_more": page < total_pages,
-                "start_index": start_index,
-                "end_index": min(start_index + len(key_value) - 1, key_size - 1) if key_value else start_index,
-                "showing_count": len(key_value) if key_value else 0
-            }
+            else:
+                # Page-based pagination
+                total_pages = (key_size + per_page - 1) // per_page if key_size > 0 else 1
+                start_index = (page - 1) * per_page
+                end_index = start_index + per_page - 1  # Redis uses inclusive end indices
+                
+                if key_type == "list":
+                    # Use LRANGE for lists
+                    key_value = redis_conn.lrange(key_name, start_index, end_index)
+                    
+                elif key_type == "set":
+                    # For sets, we need to use SSCAN for pagination
+                    scan_cursor = 0
+                    all_members = []
+                    # Get all members first (sets don't have inherent ordering)
+                    while True:
+                        scan_cursor, members = redis_conn.sscan(key_name, cursor=scan_cursor, count=1000)
+                        all_members.extend(members)
+                        if scan_cursor == 0:
+                            break
+                    
+                    # Sort for consistent pagination
+                    all_members.sort()
+                    key_value = all_members[start_index:start_index + per_page]
+                    
+                elif key_type == "zset":
+                    # Use ZRANGE for sorted sets (already ordered by score)
+                    key_value = redis_conn.zrange(key_name, start_index, end_index, withscores=True)
+                    
+                elif key_type == "hash":
+                    # For hashes, get all fields first then paginate
+                    all_fields = redis_conn.hgetall(key_name)
+                    # Sort fields for consistent pagination
+                    sorted_fields = sorted(all_fields.items())
+                    paginated_fields = sorted_fields[start_index:start_index + per_page]
+                    key_value = dict(paginated_fields)
+                
+                return {
+                    "name": key_name,
+                    "type": key_type,
+                    "ttl": ttl if ttl > 0 else None,
+                    "size": key_size,
+                    "value": key_value,
+                    "exists": True,
+                    "error": None,
+                    "is_paginated": True,
+                    "page": page,
+                    "per_page": per_page,
+                    "total_pages": total_pages,
+                    "has_more": page < total_pages,
+                    "start_index": start_index,
+                    "end_index": min(start_index + len(key_value) - 1, key_size - 1) if key_value else start_index,
+                    "showing_count": len(key_value) if key_value else 0
+                }
             
         except Exception as e:
             logger.exception(f"Error getting paginated key data for {instance_alias} in db {db_number} for key {key_name}", exc_info=True)
-            return {
+            
+            base_error_response = {
                 "name": key_name,
                 "type": None,
                 "ttl": None,
@@ -623,177 +746,21 @@ class RedisPanelUtils:
                 "exists": False,
                 "error": str(e),
                 "is_paginated": False,
-                "page": page,
-                "per_page": per_page,
-                "total_pages": 0,
-                "has_more": False
             }
-
-    @classmethod
-    def get_cursor_paginated_key_data(
-        cls, 
-        instance_alias: str, 
-        db_number: int, 
-        key_name: str, 
-        cursor: int = 0,
-        per_page: int = 50,
-        pagination_threshold: int = 100
-    ) -> Dict[str, Any]:
-        """
-        Get detailed information about a specific Redis key with cursor-based pagination for collections.
-        This avoids the performance cost of sorting entire collections.
-        """
-        try:
-            redis_conn = cls.get_redis_connection(instance_alias)
-            redis_conn.select(db_number)
             
-            if not redis_conn.exists(key_name):
-                return {
-                    "name": key_name,
-                    "type": None,
-                    "ttl": None,
-                    "size": 0,
-                    "value": None,
-                    "exists": False,
-                    "error": None,
-                    "is_paginated": False,
+            if use_cursor_pagination:
+                base_error_response.update({
                     "cursor": cursor,
                     "next_cursor": 0,
                     "has_more": False,
                     "showing_count": 0
-                }
-            
-            key_type = redis_conn.type(key_name)
-            ttl = redis_conn.ttl(key_name)
-            
-            # Get total size first
-            key_size = 0
-            if key_type == "string":
-                key_value = redis_conn.get(key_name) or ""
-                key_size = len(str(key_value).encode("utf-8"))
-                # Strings are not paginated
-                return {
-                    "name": key_name,
-                    "type": key_type,
-                    "ttl": ttl if ttl > 0 else None,
-                    "size": key_size,
-                    "value": key_value,
-                    "exists": True,
-                    "error": None,
-                    "is_paginated": False,
-                    "cursor": cursor,
-                    "next_cursor": 0,
-                    "has_more": False,
-                    "showing_count": len(str(key_value))
-                }
-            elif key_type == "list":
-                key_size = redis_conn.llen(key_name)
-            elif key_type == "set":
-                key_size = redis_conn.scard(key_name)
-            elif key_type == "zset":
-                key_size = redis_conn.zcard(key_name)
-            elif key_type == "hash":
-                key_size = redis_conn.hlen(key_name)
-            
-            # Determine if pagination is needed
-            should_paginate = key_size > pagination_threshold
-            
-            if not should_paginate:
-                # Use the original method for small collections
-                original_data = cls.get_key_data(instance_alias, db_number, key_name)
-                original_data.update({
-                    "is_paginated": False,
-                    "cursor": cursor,
-                    "next_cursor": 0,
-                    "has_more": False,
-                    "showing_count": key_size
                 })
-                return original_data
-            
-            # Handle cursor-based pagination for large collections
-            key_value = None
-            next_cursor = 0
-            has_more = False
-            showing_count = 0
-            
-            if key_type == "list":
-                # For lists, cursor represents the start index
-                start_index = cursor
-                end_index = start_index + per_page - 1
-                key_value = redis_conn.lrange(key_name, start_index, end_index)
-                showing_count = len(key_value)
-                next_cursor = start_index + showing_count
-                has_more = next_cursor < key_size
-                
-            elif key_type == "set":
-                # Use SSCAN for cursor-based set iteration
-                scan_cursor, members = redis_conn.sscan(key_name, cursor=cursor, count=per_page)
-                key_value = list(members)
-                showing_count = len(key_value)
-                next_cursor = scan_cursor
-                has_more = scan_cursor != 0
-                
-            elif key_type == "zset":
-                # For sorted sets, cursor represents the start index (already sorted by score)
-                start_index = cursor
-                end_index = start_index + per_page - 1
-                key_value = redis_conn.zrange(key_name, start_index, end_index, withscores=True)
-                showing_count = len(key_value)
-                next_cursor = start_index + showing_count
-                has_more = next_cursor < key_size
-                
-            elif key_type == "hash":
-                # Use HSCAN for cursor-based hash iteration
-                scan_cursor, fields = redis_conn.hscan(key_name, cursor=cursor, count=per_page)
-                key_value = fields
-                showing_count = len(key_value)
-                next_cursor = scan_cursor
-                has_more = scan_cursor != 0
-            
-            # Calculate range information for display
-            if key_type in ["list", "zset"]:
-                # For lists and sorted sets, cursor is the actual start index
-                range_start = cursor + 1 if showing_count > 0 else 0
-                range_end = cursor + showing_count
             else:
-                # For sets and hashes using scan cursors, we can't provide exact ranges
-                # since Redis scan cursors don't represent positions
-                # We'll indicate this is cursor-based navigation
-                range_start = None
-                range_end = None
+                base_error_response.update({
+                    "page": page,
+                    "per_page": per_page,
+                    "total_pages": 0,
+                    "has_more": False
+                })
             
-            return {
-                "name": key_name,
-                "type": key_type,
-                "ttl": ttl if ttl > 0 else None,
-                "size": key_size,
-                "value": key_value,
-                "exists": True,
-                "error": None,
-                "is_paginated": True,
-                "cursor": cursor,
-                "next_cursor": next_cursor,
-                "has_more": has_more,
-                "showing_count": showing_count,
-                "start_index": cursor if key_type in ["list", "zset"] else None,
-                "range_start": range_start,
-                "range_end": range_end,
-                "pagination_type": "cursor"
-            }
-            
-        except Exception as e:
-            logger.exception(f"Error getting cursor paginated key data for {instance_alias} in db {db_number} for key {key_name}", exc_info=True)
-            return {
-                "name": key_name,
-                "type": None,
-                "ttl": None,
-                "size": 0,
-                "value": None,
-                "exists": False,
-                "error": str(e),
-                "is_paginated": False,
-                "cursor": cursor,
-                "next_cursor": 0,
-                "has_more": False,
-                "showing_count": 0
-            }
+            return base_error_response

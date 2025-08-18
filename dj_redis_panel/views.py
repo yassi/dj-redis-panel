@@ -246,8 +246,8 @@ def key_detail(request, instance_alias, db_number, key_name):
         except (ValueError, TypeError):
             cursor = 0
         
-        key_data = RedisPanelUtils.get_cursor_paginated_key_data(
-            instance_alias, db_number, key_name, cursor, per_page, pagination_threshold=100
+        key_data = RedisPanelUtils.get_paginated_key_data(
+            instance_alias, db_number, key_name, cursor=cursor, per_page=per_page, pagination_threshold=100
         )
     else:
         # Use page-based pagination
@@ -260,7 +260,7 @@ def key_detail(request, instance_alias, db_number, key_name):
             page = 1
         
         key_data = RedisPanelUtils.get_paginated_key_data(
-            instance_alias, db_number, key_name, page, per_page, pagination_threshold=100
+            instance_alias, db_number, key_name, page=page, per_page=per_page, pagination_threshold=100
         )
     
     # Handle key not found
