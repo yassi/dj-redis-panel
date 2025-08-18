@@ -14,7 +14,6 @@ DJ_REDIS_PANEL_SETTINGS = {
     "ALLOW_KEY_EDIT": True,
     "ALLOW_TTL_UPDATE": True,
     "CURSOR_PAGINATED_SCAN": False,
-    "CURSOR_PAGINATED_SCAN": False,
     "CURSOR_PAGINATED_COLLECTIONS": False,
     # Redis instances configuration
     "INSTANCES": {
