@@ -1,0 +1,71 @@
+{% load i18n %}
+{# Reusable pagination controls for key detail collections #}
+{# Parameters: collection_type (for labeling), position (top/bottom) #}
+
+<div class="pagination-{% if position %}{{ position }}{% else %}info{% endif %}">
+    <p class="paginator">
+        {% if use_cursor_pagination %}
+            {% if has_more or current_cursor > 0 %}
+                {% if range_start and range_end %}
+                    {% if collection_type == "hash" %}
+                        Showing fields {{ range_start }} - {{ range_end }} of {{ key_data.size }}
+                    {% else %}
+                        Showing items {{ range_start }} - {{ range_end }} of {{ key_data.size }}
+                    {% endif %}
+                {% else %}
+                    {% if collection_type == "hash" %}
+                        Showing {{ showing_count }} of {{ key_data.size }} fields (cursor: {{ current_cursor }})
+                    {% else %}
+                        Showing {{ showing_count }} of {{ key_data.size }} items (cursor: {{ current_cursor }})
+                    {% endif %}
+                {% endif %}
+                <br>
+                {% if current_cursor > 0 %}
+                    <a href="?per_page={{ per_page }}&cursor=0" class="prev">{% trans 'first' %}</a>
+                {% endif %}
+                {% if has_more %}
+                    <a href="?per_page={{ per_page }}&cursor={{ next_cursor }}" class="next">{% trans 'next' %}</a>
+                {% endif %}
+            {% else %}
+                {% if collection_type == "hash" %}
+                    Showing all {{ key_data.size }} fields
+                {% else %}
+                    Showing all {{ key_data.size }} items
+                {% endif %}
+            {% endif %}
+        {% else %}
+            {% if total_pages > 1 %}
+            Page {{ current_page }} of {{ total_pages }} 
+            {% if collection_type == "hash" %}
+                (showing {{ showing_count }} of {{ key_data.size }} fields)
+            {% else %}
+                (showing {{ showing_count }} of {{ key_data.size }} items)
+            {% endif %}
+            <br>
+            {% if has_previous %}
+                <a href="?per_page={{ per_page }}&page={{ previous_page }}" class="prev">{% trans 'previous' %}</a>
+            {% endif %}
+            
+            {% for num in page_range %}
+                {% if num == "..." %}
+                    …
+                {% elif num == current_page %}
+                    <span class="this-page">{{ num }}</span>
+                {% else %}
+                    <a href="?per_page={{ per_page }}&page={{ num }}">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+            
+            {% if has_next %}
+                <a href="?per_page={{ per_page }}&page={{ next_page }}" class="next">{% trans 'next' %}</a>
+            {% endif %}
+            {% else %}
+            {% if collection_type == "hash" %}
+                Showing all {{ key_data.size }} fields
+            {% else %}
+                Showing all {{ key_data.size }} items
+            {% endif %}
+            {% endif %}
+        {% endif %}
+    </p>
+</div>

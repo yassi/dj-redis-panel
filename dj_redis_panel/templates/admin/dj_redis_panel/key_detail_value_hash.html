@@ -1,0 +1,42 @@
+{% load i18n %}
+{# Hash value display template #}
+
+<!-- Hash display -->
+<div class="key-value-display">
+    <h3>{% trans 'Hash Fields' %} ({{ key_data.size }} {% trans 'fields' %})</h3>
+    
+    {% if is_paginated %}
+    <!-- Pagination info (without controls) -->
+    {% include "admin/dj_redis_panel/key_detail_pagination_info.html" with collection_type="fields" %}
+    {% endif %}
+    
+    {% if key_data.value %}
+    <table class="key-value-table">
+        <thead>
+            <tr>
+                <th>{% trans 'Field' %}</th>
+                <th>{% trans 'Value' %}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for field, value in key_data.value.items %}
+            <tr>
+                <td><code>{{ field }}</code></td>
+                <td><code>{{ value }}</code></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    {% if is_paginated %}{% if has_more or total_pages > 1 %}
+    <!-- Bottom pagination for hashes -->
+    {% include "admin/dj_redis_panel/key_detail_pagination.html" with collection_type="hash" position="controls" %}
+    {% endif %}{% endif %}
+    
+    {% else %}
+    <p class="quiet">{% trans 'Hash is empty' %}</p>
+    {% endif %}
+    <div class="help">
+        {% trans 'Hash editing is not supported in this interface. Use Redis CLI or other tools for complex hash operations.' %}
+    </div>
+</div>

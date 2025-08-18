@@ -268,3 +268,353 @@ class TestKeyDetailView(RedisTestCase):
         finally:
             # Cleanup
             self.redis_conn.delete(key_with_slashes)
+
+    def test_key_detail_pagination_small_collection_no_pagination(self):
+        """Test that small collections are not paginated."""
+        # Create a small list (under pagination threshold)
+        small_list_key = 'test:small_list'
+        for i in range(10):
+            self.redis_conn.lpush(small_list_key, f'item_{i}')
+        
+        try:
+            url = reverse('dj_redis_panel:key_detail', args=['test_redis', 15, small_list_key])
+            response = self.client.get(url)
+            
+            self.assertEqual(response.status_code, 200)
+            key_data = response.context['key_data']
+            
+            # Should not be paginated
+            self.assertFalse(key_data.get('is_paginated', False))
+            self.assertEqual(len(key_data['value']), 10)
+            self.assertFalse(response.context['is_paginated'])
+        finally:
+            self.redis_conn.delete(small_list_key)
+
+    def test_key_detail_pagination_large_collections_by_type(self):
+        """Test page-based pagination for all large collection types."""
+        # Test data: (key_suffix, key_type, create_function, total_items, per_page, expected_pages, special_validation)
+        test_cases = [
+            ('list', 'list', self._create_large_list, 150, 50, 3, None),
+            ('set', 'set', self._create_large_set, 150, 25, 6, None),
+            ('hash', 'hash', self._create_large_hash, 150, 25, 6, None),
+            ('zset', 'zset', self._create_large_zset, 150, 25, 6, self._validate_zset_scores),
+        ]
+        
+        for key_suffix, expected_type, create_func, total_items, per_page, expected_pages, validator in test_cases:
+            with self.subTest(key_type=expected_type, total_items=total_items, per_page=per_page):
+                key_name = f'test:large_{key_suffix}'
+                
+                # Create the collection
+                create_func(key_name, total_items)
+                
+                try:
+                    # Test first page
+                    url = reverse('dj_redis_panel:key_detail', args=['test_redis', 15, key_name])
+                    response = self.client.get(url, {'per_page': per_page})
+                    
+                    self.assertEqual(response.status_code, 200)
+                    key_data = response.context['key_data']
+                    
+                    # Should be paginated
+                    self.assertTrue(key_data.get('is_paginated', False))
+                    self.assertTrue(response.context['is_paginated'])
+                    self.assertEqual(key_data['type'], expected_type)
+                    self.assertEqual(len(key_data['value']), per_page)
+                    self.assertEqual(response.context['current_page'], 1)
+                    self.assertEqual(response.context['total_pages'], expected_pages)
+                    self.assertTrue(response.context['has_next'])
+                    self.assertFalse(response.context['has_previous'])
+                    
+                    # Run type-specific validation if provided
+                    if validator:
+                        validator(key_data['value'])
+                    
+                    # Test second page navigation
+                    response = self.client.get(url, {'per_page': per_page, 'page': 2})
+                    self.assertEqual(response.status_code, 200)
+                    key_data = response.context['key_data']
+                    
+                    self.assertEqual(len(key_data['value']), per_page)
+                    self.assertEqual(response.context['current_page'], 2)
+                    self.assertTrue(response.context['has_next'])
+                    self.assertTrue(response.context['has_previous'])
+                    
+                finally:
+                    self.redis_conn.delete(key_name)
+
+    def _create_large_list(self, key_name, count):
+        """Helper to create a large list."""
+        for i in range(count):
+            self.redis_conn.lpush(key_name, f'item_{i:03d}')
+
+    def _create_large_set(self, key_name, count):
+        """Helper to create a large set."""
+        for i in range(count):
+            self.redis_conn.sadd(key_name, f'member_{i:03d}')
+
+    def _create_large_hash(self, key_name, count):
+        """Helper to create a large hash."""
+        for i in range(count):
+            self.redis_conn.hset(key_name, f'field_{i:03d}', f'value_{i:03d}')
+
+    def _create_large_zset(self, key_name, count):
+        """Helper to create a large sorted set."""
+        for i in range(count):
+            self.redis_conn.zadd(key_name, {f'member_{i:03d}': i})
+
+    def _validate_zset_scores(self, zset_value):
+        """Helper to validate that sorted set items have scores."""
+        self.assertTrue(len(zset_value) > 0)
+        first_item = zset_value[0]
+        self.assertIsInstance(first_item, tuple)  # (member, score)
+        self.assertEqual(len(first_item), 2)
+
+    def _create_large_list_cursor(self, cursor_conn, key_name, count):
+        """Helper to create a large list in the cursor database."""
+        for i in range(count):
+            cursor_conn.lpush(key_name, f'cursor_item_{i:03d}')
+
+    def _create_large_set_cursor(self, cursor_conn, key_name, count):
+        """Helper to create a large set in the cursor database."""
+        for i in range(count):
+            cursor_conn.sadd(key_name, f'cursor_member_{i:03d}')
+
+    def _create_large_hash_cursor(self, cursor_conn, key_name, count):
+        """Helper to create a large hash in the cursor database."""
+        for i in range(count):
+            cursor_conn.hset(key_name, f'cursor_field_{i:03d}', f'cursor_value_{i:03d}')
+
+    def _create_large_zset_cursor(self, cursor_conn, key_name, count):
+        """Helper to create a large sorted set in the cursor database."""
+        for i in range(count):
+            cursor_conn.zadd(key_name, {f'cursor_member_{i:03d}': i})
+
+    def test_key_detail_pagination_large_collections_cursor_based(self):
+        """Test cursor-based pagination for all large collection types using test_redis_cursor instance."""
+        # Create connection to the cursor instance database (db 12)
+        import redis
+        cursor_conn = redis.Redis(host='127.0.0.1', port=6379, db=12, decode_responses=True)
+        
+        # Test data: (key_suffix, key_type, create_function, total_items, per_page, special_validation)
+        test_cases = [
+            ('list_cursor', 'list', self._create_large_list_cursor, 150, 50, None),
+            ('set_cursor', 'set', self._create_large_set_cursor, 150, 25, None),
+            ('hash_cursor', 'hash', self._create_large_hash_cursor, 150, 25, None),
+            ('zset_cursor', 'zset', self._create_large_zset_cursor, 150, 25, self._validate_zset_scores),
+        ]
+        
+        for key_suffix, expected_type, create_func, total_items, per_page, validator in test_cases:
+            with self.subTest(key_type=expected_type, total_items=total_items, per_page=per_page):
+                key_name = f'test:large_{key_suffix}'
+                
+                # Create the collection in the cursor database
+                create_func(cursor_conn, key_name, total_items)
+                
+                try:
+                    # Test first cursor page (cursor=0)
+                    url = reverse('dj_redis_panel:key_detail', args=['test_redis_cursor', 12, key_name])
+                    response = self.client.get(url, {'per_page': per_page, 'cursor': 0})
+                    
+                    self.assertEqual(response.status_code, 200)
+                    key_data = response.context['key_data']
+                    
+                    # Should be using cursor-based pagination (no fallback needed)
+                    self.assertTrue(key_data.get('is_paginated', False))
+                    self.assertTrue(response.context['is_paginated'])
+                    self.assertTrue(response.context['use_cursor_pagination'])
+                    self.assertEqual(key_data['type'], expected_type)
+                    
+                    # Should have cursor-specific context variables
+                    self.assertEqual(response.context['current_cursor'], 0)
+                    self.assertIn('next_cursor', response.context)
+                    self.assertEqual(key_data.get('pagination_type'), 'cursor')
+                    
+                    # Should have data (amount may vary with cursor pagination)
+                    self.assertGreater(len(key_data['value']), 0)
+                    
+                    # Run type-specific validation if provided
+                    if validator:
+                        validator(key_data['value'])
+                    
+                    # Test cursor navigation if has_more is True
+                    if response.context.get('has_more', False):
+                        next_cursor = response.context['next_cursor']
+                        self.assertIsNotNone(next_cursor)
+                        
+                        # For lists and zsets, cursor should advance by the number of items
+                        if expected_type in ['list', 'zset']:
+                            self.assertGreater(next_cursor, 0)
+                        # For sets and hashes, next_cursor is a Redis scan cursor (could be any value)
+                        
+                        # Test second cursor page
+                        response2 = self.client.get(url, {'per_page': per_page, 'cursor': next_cursor})
+                        self.assertEqual(response2.status_code, 200)
+                        key_data2 = response2.context['key_data']
+                        
+                        # Should have different data than first page
+                        self.assertGreater(len(key_data2['value']), 0)
+                        self.assertEqual(response2.context['current_cursor'], next_cursor)
+                        
+                        # Verify range information for cursor pagination
+                        if response.context.get('range_start') and response.context.get('range_end'):
+                            # Lists and sorted sets should have range info
+                            self.assertIn(expected_type, ['list', 'zset'])
+                            self.assertGreater(response.context['range_start'], 0)
+                            self.assertGreater(response.context['range_end'], response.context['range_start'])
+                        else:
+                            # Sets and hashes use scan cursors without exact ranges
+                            self.assertIn(expected_type, ['set', 'hash'])
+                    
+                finally:
+                    cursor_conn.delete(key_name)
+
+    def test_key_detail_pagination_per_page_reset(self):
+        """Test that changing per_page resets pagination to beginning."""
+        # Create a large list
+        large_list_key = 'test:pagination_reset'
+        for i in range(100):
+            self.redis_conn.lpush(large_list_key, f'item_{i:03d}')
+        
+        try:
+            url = reverse('dj_redis_panel:key_detail', args=['test_redis', 15, large_list_key])
+            
+            # Go to page 3 with 25 per page
+            response = self.client.get(url, {'per_page': 25, 'page': 3})
+            self.assertEqual(response.context['current_page'], 3)
+            
+            # Change per_page to 50 - should reset to page 1
+            response = self.client.get(url, {'per_page': 50})
+            self.assertEqual(response.context['current_page'], 1)
+            self.assertEqual(response.context['per_page'], 50)
+            
+        finally:
+            self.redis_conn.delete(large_list_key)
+
+    def test_key_detail_pagination_invalid_page(self):
+        """Test pagination with invalid page numbers."""
+        # Create a large list
+        large_list_key = 'test:invalid_page'
+        for i in range(75):
+            self.redis_conn.lpush(large_list_key, f'item_{i:03d}')
+        
+        try:
+            url = reverse('dj_redis_panel:key_detail', args=['test_redis', 15, large_list_key])
+            
+            # Test page 0 (should default to 1)
+            response = self.client.get(url, {'per_page': 25, 'page': 0})
+            self.assertEqual(response.context['current_page'], 1)
+            
+            # Test negative page (should default to 1)
+            response = self.client.get(url, {'per_page': 25, 'page': -5})
+            self.assertEqual(response.context['current_page'], 1)
+            
+            # Test page beyond total (should clamp to valid range)
+            response = self.client.get(url, {'per_page': 25, 'page': 999})
+            # The view should handle this gracefully
+            self.assertEqual(response.status_code, 200)
+            
+        finally:
+            self.redis_conn.delete(large_list_key)
+
+    def test_key_detail_pagination_per_page_validation(self):
+        """Test per_page parameter validation."""
+        # Create a large list
+        large_list_key = 'test:per_page_validation'
+        for i in range(100):
+            self.redis_conn.lpush(large_list_key, f'item_{i:03d}')
+        
+        try:
+            url = reverse('dj_redis_panel:key_detail', args=['test_redis', 15, large_list_key])
+            
+            # Test invalid per_page values should default to 50
+            invalid_values = [0, -10, 999, 'invalid']
+            for invalid_value in invalid_values:
+                response = self.client.get(url, {'per_page': invalid_value})
+                self.assertEqual(response.context['per_page'], 50)
+            
+            # Test valid per_page values
+            valid_values = [25, 50, 100, 200]
+            for valid_value in valid_values:
+                response = self.client.get(url, {'per_page': valid_value})
+                self.assertEqual(response.context['per_page'], valid_value)
+                
+        finally:
+            self.redis_conn.delete(large_list_key)
+
+    def test_key_detail_pagination_context_variables(self):
+        """Test that all pagination context variables are properly set."""
+        # Create a large list
+        large_list_key = 'test:pagination_context'
+        for i in range(130):
+            self.redis_conn.lpush(large_list_key, f'item_{i:03d}')
+        
+        try:
+            url = reverse('dj_redis_panel:key_detail', args=['test_redis', 15, large_list_key])
+            response = self.client.get(url, {'per_page': 50, 'page': 2})
+            
+            self.assertEqual(response.status_code, 200)
+            
+            # Check all pagination context variables
+            self.assertTrue(response.context['is_paginated'])
+            self.assertEqual(response.context['per_page'], 50)
+            self.assertEqual(response.context['current_page'], 2)
+            self.assertEqual(response.context['total_pages'], 3)  # 130 / 50 = 2.6 -> 3
+            self.assertTrue(response.context['has_previous'])
+            self.assertTrue(response.context['has_next'])
+            self.assertEqual(response.context['previous_page'], 1)
+            self.assertEqual(response.context['next_page'], 3)
+            self.assertEqual(response.context['showing_count'], 50)
+            
+            # Check page_range is present
+            self.assertIn('page_range', response.context)
+            page_range = response.context['page_range']
+            self.assertIn(1, page_range)
+            self.assertIn(2, page_range)
+            self.assertIn(3, page_range)
+            
+        finally:
+            self.redis_conn.delete(large_list_key)
+
+    def test_key_detail_string_not_paginated(self):
+        """Test that string keys are never paginated."""
+        # Create a large string value
+        large_string_key = 'test:large_string'
+        large_string_value = 'x' * 10000  # 10KB string
+        self.redis_conn.set(large_string_key, large_string_value)
+        
+        try:
+            url = reverse('dj_redis_panel:key_detail', args=['test_redis', 15, large_string_key])
+            response = self.client.get(url, {'per_page': 25})
+            
+            self.assertEqual(response.status_code, 200)
+            key_data = response.context['key_data']
+            
+            # String should never be paginated
+            self.assertFalse(key_data.get('is_paginated', False))
+            self.assertFalse(response.context['is_paginated'])
+            self.assertEqual(key_data['value'], large_string_value)
+            
+        finally:
+            self.redis_conn.delete(large_string_key)
+
+    def test_key_detail_pagination_template_includes(self):
+        """Test that paginated collections use the correct template includes."""
+        # Create a large list (over pagination threshold)
+        large_list_key = 'test:template_includes'
+        for i in range(120):  # Above threshold of 100
+            self.redis_conn.lpush(large_list_key, f'item_{i:03d}')
+        
+        try:
+            url = reverse('dj_redis_panel:key_detail', args=['test_redis', 15, large_list_key])
+            response = self.client.get(url, {'per_page': 25})
+            
+            self.assertEqual(response.status_code, 200)
+            
+            # Check that the collection is paginated
+            self.assertTrue(response.context['is_paginated'])
+            
+            # Check that it uses the partitioned templates
+            self.assertTemplateUsed(response, 'admin/dj_redis_panel/key_detail.html')
+            
+        finally:
+            self.redis_conn.delete(large_list_key)

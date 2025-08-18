@@ -1,0 +1,42 @@
+{% load i18n %}
+{# Sorted Set value display template #}
+
+<!-- Sorted Set display -->
+<div class="key-value-display">
+    <h3>{% trans 'Sorted Set Members' %} ({{ key_data.size }} {% trans 'items' %})</h3>
+    
+    {% if is_paginated %}
+    <!-- Pagination info (without controls) -->
+    {% include "admin/dj_redis_panel/key_detail_pagination_info.html" with collection_type="members" %}
+    {% endif %}
+    
+    {% if key_data.value %}
+    <table class="key-value-table">
+        <thead>
+            <tr>
+                <th>{% trans 'Member' %}</th>
+                <th>{% trans 'Score' %}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for member, score in key_data.value %}
+            <tr>
+                <td><code>{{ member }}</code></td>
+                <td><code>{{ score }}</code></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    {% if is_paginated %}{% if has_more or total_pages > 1 %}
+    <!-- Bottom pagination for sorted sets -->
+    {% include "admin/dj_redis_panel/key_detail_pagination.html" with collection_type="zset" position="controls" %}
+    {% endif %}{% endif %}
+    
+    {% else %}
+    <p class="quiet">{% trans 'Sorted set is empty' %}</p>
+    {% endif %}
+    <div class="help">
+        {% trans 'Sorted set editing is not supported in this interface. Use Redis CLI or other tools for complex sorted set operations.' %}
+    </div>
+</div>

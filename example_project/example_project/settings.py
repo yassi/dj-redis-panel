@@ -132,6 +132,7 @@ DJ_REDIS_PANEL_SETTINGS = {
     "ALLOW_KEY_EDIT": False,
     "ALLOW_TTL_UPDATE": False,
     "CURSOR_PAGINATED_SCAN": False,
+    "CURSOR_PAGINATED_COLLECTIONS": False,
     "INSTANCES": {
         "local_redis": {
             "description": "Local Redis Instance",
@@ -142,6 +143,7 @@ DJ_REDIS_PANEL_SETTINGS = {
                 "ALLOW_KEY_EDIT": True,
                 "ALLOW_TTL_UPDATE": True,
                 "CURSOR_PAGINATED_SCAN": True,
+                "CURSOR_PAGINATED_COLLECTIONS": True,
             },
         },
         "local_redis_from_url_no_features": {

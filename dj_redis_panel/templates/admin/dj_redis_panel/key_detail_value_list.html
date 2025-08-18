@@ -1,0 +1,42 @@
+{% load i18n %}
+{# List value display template #}
+
+<!-- List display -->
+<div class="key-value-display">
+    <h3>{% trans 'List Elements' %} ({{ key_data.size }} {% trans 'items' %})</h3>
+    
+    {% if is_paginated %}
+    <!-- Pagination info (without controls) -->
+    {% include "admin/dj_redis_panel/key_detail_pagination_info.html" with collection_type="items" %}
+    {% endif %}
+    
+    {% if key_data.value %}
+    <table class="key-value-table">
+        <thead>
+            <tr>
+                <th>{% trans 'Index' %}</th>
+                <th>{% trans 'Value' %}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in key_data.value %}
+            <tr>
+                <td><code>{% if is_paginated %}{{ start_index|add:forloop.counter0 }}{% else %}{{ forloop.counter0 }}{% endif %}</code></td>
+                <td><code>{{ item }}</code></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    {% if is_paginated %}{% if has_more or total_pages > 1 %}
+    <!-- Bottom pagination for lists -->
+    {% include "admin/dj_redis_panel/key_detail_pagination.html" with collection_type="list" position="controls" %}
+    {% endif %}{% endif %}
+    
+    {% else %}
+    <p class="quiet">{% trans 'List is empty' %}</p>
+    {% endif %}
+    <div class="help">
+        {% trans 'List editing is not supported in this interface. Use Redis CLI or other tools for complex list operations.' %}
+    </div>
+</div>
