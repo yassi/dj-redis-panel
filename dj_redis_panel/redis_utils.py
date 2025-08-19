@@ -764,3 +764,145 @@ class RedisPanelUtils:
                 })
             
             return base_error_response
+
+    @classmethod
+    def add_list_item(cls, instance_alias: str, db_number: int, key_name: str, value: str, position: str = "end") -> Dict[str, Any]:
+        """
+        Add a new item to a Redis list.
+        
+        Args:
+            instance_alias: Redis instance alias
+            db_number: Database number
+            key_name: Name of the list key
+            value: Value to add to the list
+            position: Where to add the item ("start" or "end", defaults to "end")
+            
+        Returns:
+            Dict with success status and any error information
+        """
+        try:
+            redis_conn = cls.get_redis_connection(instance_alias)
+            redis_conn.select(db_number)
+            
+            # Check if key exists and is a list (or doesn't exist yet)
+            if redis_conn.exists(key_name) and redis_conn.type(key_name) != "list":
+                return {"success": False, "error": f"Key '{key_name}' exists but is not a list"}
+            
+            # Add the item to the list
+            if position == "start":
+                redis_conn.lpush(key_name, value)
+            else:  # default to "end"
+                redis_conn.rpush(key_name, value)
+            
+            return {"success": True, "error": None}
+            
+        except Exception as e:
+            logger.exception(f"Error adding list item for {instance_alias} in db {db_number} for key {key_name}", exc_info=True)
+            return {"success": False, "error": str(e)}
+
+    @classmethod
+    def add_set_member(cls, instance_alias: str, db_number: int, key_name: str, member: str) -> Dict[str, Any]:
+        """
+        Add a member to a Redis set.
+        
+        Args:
+            instance_alias: Redis instance alias
+            db_number: Database number
+            key_name: Name of the set key
+            member: Member to add to the set
+            
+        Returns:
+            Dict with success status and any error information
+        """
+        try:
+            redis_conn = cls.get_redis_connection(instance_alias)
+            redis_conn.select(db_number)
+            
+            # Check if key exists and is a set (or doesn't exist yet)
+            if redis_conn.exists(key_name) and redis_conn.type(key_name) != "set":
+                return {"success": False, "error": f"Key '{key_name}' exists but is not a set"}
+            
+            # Add the member to the set
+            result = redis_conn.sadd(key_name, member)
+            
+            # result is 1 if member was added, 0 if it already existed
+            if result == 0:
+                return {"success": True, "error": None, "message": "Member already exists in set"}
+            else:
+                return {"success": True, "error": None, "message": "Member added to set"}
+            
+        except Exception as e:
+            logger.exception(f"Error adding set member for {instance_alias} in db {db_number} for key {key_name}", exc_info=True)
+            return {"success": False, "error": str(e)}
+
+    @classmethod
+    def add_zset_member(cls, instance_alias: str, db_number: int, key_name: str, score: float, member: str) -> Dict[str, Any]:
+        """
+        Add a member with score to a Redis sorted set.
+        
+        Args:
+            instance_alias: Redis instance alias
+            db_number: Database number
+            key_name: Name of the sorted set key
+            score: Score for the member
+            member: Member to add to the sorted set
+            
+        Returns:
+            Dict with success status and any error information
+        """
+        try:
+            redis_conn = cls.get_redis_connection(instance_alias)
+            redis_conn.select(db_number)
+            
+            # Check if key exists and is a sorted set (or doesn't exist yet)
+            if redis_conn.exists(key_name) and redis_conn.type(key_name) != "zset":
+                return {"success": False, "error": f"Key '{key_name}' exists but is not a sorted set"}
+            
+            # Add the member to the sorted set
+            result = redis_conn.zadd(key_name, {member: score})
+            
+            # result is 1 if member was added, 0 if score was updated
+            if result == 0:
+                return {"success": True, "error": None, "message": "Member score updated in sorted set"}
+            else:
+                return {"success": True, "error": None, "message": "Member added to sorted set"}
+            
+        except Exception as e:
+            logger.exception(f"Error adding zset member for {instance_alias} in db {db_number} for key {key_name}", exc_info=True)
+            return {"success": False, "error": str(e)}
+
+    @classmethod
+    def add_hash_field(cls, instance_alias: str, db_number: int, key_name: str, field: str, value: str) -> Dict[str, Any]:
+        """
+        Add a field-value pair to a Redis hash.
+        
+        Args:
+            instance_alias: Redis instance alias
+            db_number: Database number
+            key_name: Name of the hash key
+            field: Field name
+            value: Field value
+            
+        Returns:
+            Dict with success status and any error information
+        """
+        try:
+            redis_conn = cls.get_redis_connection(instance_alias)
+            redis_conn.select(db_number)
+            
+            # Check if key exists and is a hash (or doesn't exist yet)
+            if redis_conn.exists(key_name) and redis_conn.type(key_name) != "hash":
+                return {"success": False, "error": f"Key '{key_name}' exists but is not a hash"}
+            
+            # Add the field to the hash
+            result = redis_conn.hset(key_name, field, value)
+            
+            # result is 1 if field was added, 0 if it was updated
+            if result == 0:
+                return {"success": True, "error": None, "message": "Field updated in hash"}
+            else:
+                return {"success": True, "error": None, "message": "Field added to hash"}
+            
+        except Exception as e:
+            logger.exception(f"Error adding hash field for {instance_alias} in db {db_number} for key {key_name}", exc_info=True)
+            return {"success": False, "error": str(e)}

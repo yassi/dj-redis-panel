@@ -35,7 +35,7 @@
 
 .messagelist .success {
     background-color: var(--message-success-bg, #d4edda);
-    color: var(--message-success-fg, #155724);
+    color: var(--body-fg, #155724);
     border-color: var(--message-success-border, #c3e6cb);
 }
 

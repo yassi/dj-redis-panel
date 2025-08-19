@@ -366,6 +366,140 @@ def key_detail(request, instance_alias, db_number, key_name):
                 else:
                     error_message = "Key deletion is disabled for this instance"
 
+            elif action == "add_list_item":
+                if allow_key_edit:
+                    new_value = request.POST.get("new_value", "")
+                    position = request.POST.get("position", "end")  # "start" or "end"
+                    
+                    result = RedisPanelUtils.add_list_item(instance_alias, db_number, key_name, new_value, position)
+                    
+                    if result["success"]:
+                        success_message = result.get("message", f"New item added to {'beginning' if position == 'start' else 'end'} of list")
+                        # Refresh key data after update
+                        if use_cursor_pagination:
+                            cursor = request.GET.get('cursor', '0')
+                            try:
+                                cursor = int(cursor)
+                            except (ValueError, TypeError):
+                                cursor = 0
+                            key_data = RedisPanelUtils.get_paginated_key_data(
+                                instance_alias, db_number, key_name, cursor=cursor, per_page=per_page, pagination_threshold=100
+                            )
+                        else:
+                            page = request.GET.get('page', 1)
+                            try:
+                                page = int(page)
+                            except (ValueError, TypeError):
+                                page = 1
+                            key_data = RedisPanelUtils.get_paginated_key_data(
+                                instance_alias, db_number, key_name, page=page, per_page=per_page, pagination_threshold=100
+                            )
+                    else:
+                        error_message = result["error"]
+                else:
+                    error_message = "Key editing is disabled for this instance"
+
+            elif action == "add_set_member":
+                if allow_key_edit:
+                    new_member = request.POST.get("new_member", "")
+                    
+                    result = RedisPanelUtils.add_set_member(instance_alias, db_number, key_name, new_member)
+                    
+                    if result["success"]:
+                        success_message = result.get("message", "Member added to set")
+                        # Refresh key data after update
+                        if use_cursor_pagination:
+                            cursor = request.GET.get('cursor', '0')
+                            try:
+                                cursor = int(cursor)
+                            except (ValueError, TypeError):
+                                cursor = 0
+                            key_data = RedisPanelUtils.get_paginated_key_data(
+                                instance_alias, db_number, key_name, cursor=cursor, per_page=per_page, pagination_threshold=100
+                            )
+                        else:
+                            page = request.GET.get('page', 1)
+                            try:
+                                page = int(page)
+                            except (ValueError, TypeError):
+                                page = 1
+                            key_data = RedisPanelUtils.get_paginated_key_data(
+                                instance_alias, db_number, key_name, page=page, per_page=per_page, pagination_threshold=100
+                            )
+                    else:
+                        error_message = result["error"]
+                else:
+                    error_message = "Key editing is disabled for this instance"
+
+            elif action == "add_zset_member":
+                if allow_key_edit:
+                    try:
+                        new_score = float(request.POST.get("new_score", "0"))
+                        new_member = request.POST.get("new_member", "")
+                        
+                        result = RedisPanelUtils.add_zset_member(instance_alias, db_number, key_name, new_score, new_member)
+                        
+                        if result["success"]:
+                            success_message = result.get("message", "Member added to sorted set")
+                            # Refresh key data after update
+                            if use_cursor_pagination:
+                                cursor = request.GET.get('cursor', '0')
+                                try:
+                                    cursor = int(cursor)
+                                except (ValueError, TypeError):
+                                    cursor = 0
+                                key_data = RedisPanelUtils.get_paginated_key_data(
+                                    instance_alias, db_number, key_name, cursor=cursor, per_page=per_page, pagination_threshold=100
+                                )
+                            else:
+                                page = request.GET.get('page', 1)
+                                try:
+                                    page = int(page)
+                                except (ValueError, TypeError):
+                                    page = 1
+                                key_data = RedisPanelUtils.get_paginated_key_data(
+                                    instance_alias, db_number, key_name, page=page, per_page=per_page, pagination_threshold=100
+                                )
+                        else:
+                            error_message = result["error"]
+                    except (ValueError, TypeError):
+                        error_message = "Invalid score provided. Score must be a number."
+                else:
+                    error_message = "Key editing is disabled for this instance"
+
+            elif action == "add_hash_field":
+                if allow_key_edit:
+                    new_field = request.POST.get("new_field", "")
+                    new_value = request.POST.get("new_value", "")
+                    
+                    result = RedisPanelUtils.add_hash_field(instance_alias, db_number, key_name, new_field, new_value)
+                    
+                    if result["success"]:
+                        success_message = result.get("message", "Field added to hash")
+                        # Refresh key data after update
+                        if use_cursor_pagination:
+                            cursor = request.GET.get('cursor', '0')
+                            try:
+                                cursor = int(cursor)
+                            except (ValueError, TypeError):
+                                cursor = 0
+                            key_data = RedisPanelUtils.get_paginated_key_data(
+                                instance_alias, db_number, key_name, cursor=cursor, per_page=per_page, pagination_threshold=100
+                            )
+                        else:
+                            page = request.GET.get('page', 1)
+                            try:
+                                page = int(page)
+                            except (ValueError, TypeError):
+                                page = 1
+                            key_data = RedisPanelUtils.get_paginated_key_data(
+                                instance_alias, db_number, key_name, page=page, per_page=per_page, pagination_threshold=100
+                            )
+                    else:
+                        error_message = result["error"]
+                else:
+                    error_message = "Key editing is disabled for this instance"
+
     except Exception as e:
         error_message = str(e)
 
