@@ -906,3 +906,130 @@ class RedisPanelUtils:
         except Exception as e:
             logger.exception(f"Error adding hash field for {instance_alias} in db {db_number} for key {key_name}", exc_info=True)
             return {"success": False, "error": str(e)}
+
+    @classmethod
+    def delete_list_item_by_index(cls, instance_alias: str, db_number: int, key_name: str, index: int) -> Dict[str, Any]:
+        """
+        Delete a specific item from a Redis list at the given index.
+        
+        Note: This is implemented by setting the item to a unique temporary value
+        and then removing it, as Redis doesn't have a direct "delete by index" command.        
+        """
+        try:
+            redis_conn = cls.get_redis_connection(instance_alias)
+            redis_conn.select(db_number)
+            
+            # Check if key exists and is a list
+            if not redis_conn.exists(key_name):
+                return {"success": False, "error": f"Key '{key_name}' does not exist"}
+            
+            if redis_conn.type(key_name) != "list":
+                return {"success": False, "error": f"Key '{key_name}' is not a list"}
+            
+            # Get list length to validate index
+            list_length = redis_conn.llen(key_name)
+            if index < 0 or index >= list_length:
+                return {"success": False, "error": f"Index {index} is out of range (list length: {list_length})"}
+            
+            # Use a unique temporary value to mark the item for deletion
+            import uuid
+            temp_value = f"__DELETE_MARKER_{uuid.uuid4().hex}__"
+            
+            # Set the item to the temporary value
+            redis_conn.lset(key_name, index, temp_value)
+            
+            # Remove the temporary value (removes first occurrence)
+            redis_conn.lrem(key_name, 1, temp_value)
+            
+            return {"success": True, "error": None, "message": "List item deleted successfully"}
+            
+        except Exception as e:
+            logger.exception(f"Error deleting list item for {instance_alias} in db {db_number} for key {key_name}", exc_info=True)
+            return {"success": False, "error": str(e)}
+
+    @classmethod
+    def delete_set_member(cls, instance_alias: str, db_number: int, key_name: str, member: str) -> Dict[str, Any]:
+        """
+        Delete a member from a Redis set.
+        """
+        try:
+            redis_conn = cls.get_redis_connection(instance_alias)
+            redis_conn.select(db_number)
+            
+            # Check if key exists and is a set
+            if not redis_conn.exists(key_name):
+                return {"success": False, "error": f"Key '{key_name}' does not exist"}
+            
+            if redis_conn.type(key_name) != "set":
+                return {"success": False, "error": f"Key '{key_name}' is not a set"}
+            
+            # Remove the member from the set
+            result = redis_conn.srem(key_name, member)
+            
+            # result is 1 if member was removed, 0 if it didn't exist
+            if result == 0:
+                return {"success": False, "error": "Member does not exist in set"}
+            else:
+                return {"success": True, "error": None, "message": "Set member deleted successfully"}
+            
+        except Exception as e:
+            logger.exception(f"Error deleting set member for {instance_alias} in db {db_number} for key {key_name}", exc_info=True)
+            return {"success": False, "error": str(e)}
+
+    @classmethod
+    def delete_zset_member(cls, instance_alias: str, db_number: int, key_name: str, member: str) -> Dict[str, Any]:
+        """
+        Delete a member from a Redis sorted set.
+        """
+        try:
+            redis_conn = cls.get_redis_connection(instance_alias)
+            redis_conn.select(db_number)
+            
+            # Check if key exists and is a sorted set
+            if not redis_conn.exists(key_name):
+                return {"success": False, "error": f"Key '{key_name}' does not exist"}
+            
+            if redis_conn.type(key_name) != "zset":
+                return {"success": False, "error": f"Key '{key_name}' is not a sorted set"}
+            
+            # Remove the member from the sorted set
+            result = redis_conn.zrem(key_name, member)
+            
+            # result is 1 if member was removed, 0 if it didn't exist
+            if result == 0:
+                return {"success": False, "error": "Member does not exist in sorted set"}
+            else:
+                return {"success": True, "error": None, "message": "Sorted set member deleted successfully"}
+            
+        except Exception as e:
+            logger.exception(f"Error deleting zset member for {instance_alias} in db {db_number} for key {key_name}", exc_info=True)
+            return {"success": False, "error": str(e)}
+
+    @classmethod
+    def delete_hash_field(cls, instance_alias: str, db_number: int, key_name: str, field: str) -> Dict[str, Any]:
+        """
+        Delete a field from a Redis hash.
+        """
+        try:
+            redis_conn = cls.get_redis_connection(instance_alias)
+            redis_conn.select(db_number)
+            
+            # Check if key exists and is a hash
+            if not redis_conn.exists(key_name):
+                return {"success": False, "error": f"Key '{key_name}' does not exist"}
+            
+            if redis_conn.type(key_name) != "hash":
+                return {"success": False, "error": f"Key '{key_name}' is not a hash"}
+            
+            # Remove the field from the hash
+            result = redis_conn.hdel(key_name, field)
+            
+            # result is 1 if field was removed, 0 if it didn't exist
+            if result == 0:
+                return {"success": False, "error": "Field does not exist in hash"}
+            else:
+                return {"success": True, "error": None, "message": "Hash field deleted successfully"}
+            
+        except Exception as e:
+            logger.exception(f"Error deleting hash field for {instance_alias} in db {db_number} for key {key_name}", exc_info=True)
+            return {"success": False, "error": str(e)}

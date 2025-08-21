@@ -349,6 +349,14 @@ class KeyDetailView(View):
                     success_message, error_message, key_data = self._handle_add_zset_member()
                 elif action == "add_hash_field":
                     success_message, error_message, key_data = self._handle_add_hash_field()
+                elif action == "delete_list_item":
+                    success_message, error_message, key_data = self._handle_delete_list_item()
+                elif action == "delete_set_member":
+                    success_message, error_message, key_data = self._handle_delete_set_member()
+                elif action == "delete_zset_member":
+                    success_message, error_message, key_data = self._handle_delete_zset_member()
+                elif action == "delete_hash_field":
+                    success_message, error_message, key_data = self._handle_delete_hash_field()
                 
             except Exception as e:
                 error_message = str(e)
@@ -489,6 +497,74 @@ class KeyDetailView(View):
         
         if result["success"]:
             success_message = result.get("message", "Field added to hash")
+            key_data = self._get_key_data()
+            return success_message, None, key_data
+        else:
+            return None, result["error"], self._get_key_data()
+    
+    def _handle_delete_list_item(self):
+        """Handle delete_list_item action"""
+        if not self.allow_key_edit:
+            return None, "Key editing is disabled for this instance", self._get_key_data()
+        
+        try:
+            index = int(self.request.POST.get("index", -1))
+            
+            result = RedisPanelUtils.delete_list_item_by_index(self.instance_alias, self.db_number, self.key_name, index)
+            
+            if result["success"]:
+                success_message = result.get("message", f"List item at index {index} deleted successfully")
+                key_data = self._get_key_data()
+                return success_message, None, key_data
+            else:
+                return None, result["error"], self._get_key_data()
+                
+        except (ValueError, TypeError):
+            return None, "Invalid index provided", self._get_key_data()
+    
+    def _handle_delete_set_member(self):
+        """Handle delete_set_member action"""
+        if not self.allow_key_edit:
+            return None, "Key editing is disabled for this instance", self._get_key_data()
+        
+        member = self.request.POST.get("member", "")
+        
+        result = RedisPanelUtils.delete_set_member(self.instance_alias, self.db_number, self.key_name, member)
+        
+        if result["success"]:
+            success_message = result.get("message", "Set member deleted successfully")
+            key_data = self._get_key_data()
+            return success_message, None, key_data
+        else:
+            return None, result["error"], self._get_key_data()
+    
+    def _handle_delete_zset_member(self):
+        """Handle delete_zset_member action"""
+        if not self.allow_key_edit:
+            return None, "Key editing is disabled for this instance", self._get_key_data()
+        
+        member = self.request.POST.get("member", "")
+        
+        result = RedisPanelUtils.delete_zset_member(self.instance_alias, self.db_number, self.key_name, member)
+        
+        if result["success"]:
+            success_message = result.get("message", "Sorted set member deleted successfully")
+            key_data = self._get_key_data()
+            return success_message, None, key_data
+        else:
+            return None, result["error"], self._get_key_data()
+    
+    def _handle_delete_hash_field(self):
+        """Handle delete_hash_field action"""
+        if not self.allow_key_edit:
+            return None, "Key editing is disabled for this instance", self._get_key_data()
+        
+        field = self.request.POST.get("field", "")
+        
+        result = RedisPanelUtils.delete_hash_field(self.instance_alias, self.db_number, self.key_name, field)
+        
+        if result["success"]:
+            success_message = result.get("message", "Hash field deleted successfully")
             key_data = self._get_key_data()
             return success_message, None, key_data
         else:
