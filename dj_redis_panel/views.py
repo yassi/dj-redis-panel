@@ -357,6 +357,12 @@ class KeyDetailView(View):
                     success_message, error_message, key_data = self._handle_delete_zset_member()
                 elif action == "delete_hash_field":
                     success_message, error_message, key_data = self._handle_delete_hash_field()
+                elif action == "update_list_item":
+                    success_message, error_message, key_data = self._handle_update_list_item()
+                elif action == "update_hash_field_value":
+                    success_message, error_message, key_data = self._handle_update_hash_field_value()
+                elif action == "update_zset_member_score":
+                    success_message, error_message, key_data = self._handle_update_zset_member_score()
                 
             except Exception as e:
                 error_message = str(e)
@@ -569,6 +575,65 @@ class KeyDetailView(View):
             return success_message, None, key_data
         else:
             return None, result["error"], self._get_key_data()
+    
+    def _handle_update_list_item(self):
+        """Handle update_list_item action"""
+        if not self.allow_key_edit:
+            return None, "Key editing is disabled for this instance", self._get_key_data()
+        
+        try:
+            index = int(self.request.POST.get("index", -1))
+            new_value = self.request.POST.get("new_value", "")
+            
+            result = RedisPanelUtils.update_list_item_by_index(self.instance_alias, self.db_number, self.key_name, index, new_value)
+            
+            if result["success"]:
+                success_message = result.get("message", f"List item at index {index} updated successfully")
+                key_data = self._get_key_data()
+                return success_message, None, key_data
+            else:
+                return None, result["error"], self._get_key_data()
+                
+        except (ValueError, TypeError):
+            return None, "Invalid index provided", self._get_key_data()
+    
+    def _handle_update_hash_field_value(self):
+        """Handle update_hash_field_value action"""
+        if not self.allow_key_edit:
+            return None, "Key editing is disabled for this instance", self._get_key_data()
+        
+        field = self.request.POST.get("field", "")
+        new_value = self.request.POST.get("new_value", "")
+        
+        result = RedisPanelUtils.update_hash_field_value(self.instance_alias, self.db_number, self.key_name, field, new_value)
+        
+        if result["success"]:
+            success_message = result.get("message", f"Hash field '{field}' updated successfully")
+            key_data = self._get_key_data()
+            return success_message, None, key_data
+        else:
+            return None, result["error"], self._get_key_data()
+    
+    def _handle_update_zset_member_score(self):
+        """Handle update_zset_member_score action"""
+        if not self.allow_key_edit:
+            return None, "Key editing is disabled for this instance", self._get_key_data()
+        
+        try:
+            member = self.request.POST.get("member", "")
+            new_score = float(self.request.POST.get("new_score", "0"))
+            
+            result = RedisPanelUtils.update_zset_member_score(self.instance_alias, self.db_number, self.key_name, member, new_score)
+            
+            if result["success"]:
+                success_message = result.get("message", f"Score for member '{member}' updated successfully")
+                key_data = self._get_key_data()
+                return success_message, None, key_data
+            else:
+                return None, result["error"], self._get_key_data()
+                
+        except (ValueError, TypeError):
+            return None, "Invalid score provided. Score must be a number.", self._get_key_data()
     
     def _build_context(self, key_data, error_message=None, success_message=None):
         """Build template context"""

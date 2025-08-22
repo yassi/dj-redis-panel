@@ -17,7 +17,7 @@
                 <th>{% trans 'Field' %}</th>
                 <th>{% trans 'Value' %}</th>
                 {% if allow_key_edit %}
-                <th>{% trans 'Delete' %}</th>
+                <th>{% trans 'Actions' %}</th>
                 {% endif %}
             </tr>
         </thead>
@@ -25,7 +25,21 @@
             {% for field, value in key_data.value.items %}
             <tr>
                 <td><code>{{ field }}</code></td>
-                <td><code>{{ value }}</code></td>
+                <td>
+                    {% if allow_key_edit %}
+                    <form method="post" style="display: inline-block; width: 100%;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_hash_field_value">
+                        <input type="hidden" name="field" value="{{ field }}">
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <input type="text" name="new_value" value="{{ value }}" class="inline-edit-input" style="flex: 1;">
+                            <button type="submit" class="inline-edit-btn" title="{% trans 'Update field value' %}">Save</button>
+                        </div>
+                    </form>
+                    {% else %}
+                    <code>{{ value }}</code>
+                    {% endif %}
+                </td>
                 {% if allow_key_edit %}
                 <td>
                     <form method="post" style="display: inline;" 
@@ -33,7 +47,7 @@
                         {% csrf_token %}
                         <input type="hidden" name="action" value="delete_hash_field">
                         <input type="hidden" name="field" value="{{ field }}">
-                        <button type="submit" class="delete-member-btn" title="{% trans 'Delete field' %}" {% if not allow_key_edit %}disabled{% endif %}>
+                        <button type="submit" class="delete-member-btn" title="{% trans 'Delete field' %}">
                             🗑️
                         </button>
                     </form>
@@ -52,7 +66,4 @@
     {% else %}
     <p class="quiet">{% trans 'Hash is empty' %}</p>
     {% endif %}
-    <div class="help">
-        {% trans 'Hash editing is not supported in this interface. Use Redis CLI or other tools for complex hash operations.' %}
-    </div>
 </div>

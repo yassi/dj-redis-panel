@@ -342,6 +342,17 @@
     .pagination-mode-indicator .badge.page-mode {
         background-color: #388E3C;
     }
+
+    /* Inline edit styles for dark mode */
+    .inline-edit-input {
+        border-color: #555;
+        background-color: var(--darkened-bg, #2d2d2d);
+        color: var(--body-fg, #fff);
+    }
+
+    .inline-edit-input:focus {
+        border-color: #79aec8;
+    }
 }
 
 /* Search Form Alignment Styles */
@@ -430,5 +441,56 @@
 
 .delete-member-btn:disabled:hover {
     background: none;
+    transform: none;
+}
+
+/* ===== INLINE EDIT STYLES ===== */
+
+.inline-edit-input {
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    padding: 4px 8px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 12px;
+    background-color: var(--body-bg, #fff);
+    color: var(--body-fg, #333);
+    min-width: 100px;
+}
+
+.inline-edit-input:focus {
+    outline: none;
+    border-color: #79aec8;
+    box-shadow: 0 0 0 2px rgba(121, 174, 200, 0.2);
+}
+
+.inline-edit-btn {
+    background: #79aec8;
+    border: none;
+    border-radius: 3px;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px 8px;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 28px;
+}
+
+.inline-edit-btn:hover:not(:disabled) {
+    background-color: #5b9bd5;
+    transform: scale(1.05);
+}
+
+.inline-edit-btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.inline-edit-btn:disabled:hover {
+    background-color: #ccc;
     transform: none;
 }

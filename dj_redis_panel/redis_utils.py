@@ -1033,3 +1033,91 @@ class RedisPanelUtils:
         except Exception as e:
             logger.exception(f"Error deleting hash field for {instance_alias} in db {db_number} for key {key_name}", exc_info=True)
             return {"success": False, "error": str(e)}
+
+    @classmethod
+    def update_list_item_by_index(cls, instance_alias: str, db_number: int, key_name: str, index: int, new_value: str) -> Dict[str, Any]:
+        """
+        Update a specific item in a Redis list at the given index.
+        """
+        try:
+            redis_conn = cls.get_redis_connection(instance_alias)
+            redis_conn.select(db_number)
+            
+            # Check if key exists and is a list
+            if not redis_conn.exists(key_name):
+                return {"success": False, "error": f"Key '{key_name}' does not exist"}
+            
+            if redis_conn.type(key_name) != "list":
+                return {"success": False, "error": f"Key '{key_name}' is not a list"}
+            
+            # Get list length to validate index
+            list_length = redis_conn.llen(key_name)
+            if index < 0 or index >= list_length:
+                return {"success": False, "error": f"Index {index} is out of range (list length: {list_length})"}
+            
+            # Update the item at the specified index
+            redis_conn.lset(key_name, index, new_value)
+            
+            return {"success": True, "error": None, "message": "List item updated successfully"}
+            
+        except Exception as e:
+            logger.exception(f"Error updating list item for {instance_alias} in db {db_number} for key {key_name}", exc_info=True)
+            return {"success": False, "error": str(e)}
+
+    @classmethod
+    def update_hash_field_value(cls, instance_alias: str, db_number: int, key_name: str, field: str, new_value: str) -> Dict[str, Any]:
+        """
+        Update the value of an existing field in a Redis hash.
+        """
+        try:
+            redis_conn = cls.get_redis_connection(instance_alias)
+            redis_conn.select(db_number)
+            
+            # Check if key exists and is a hash
+            if not redis_conn.exists(key_name):
+                return {"success": False, "error": f"Key '{key_name}' does not exist"}
+            
+            if redis_conn.type(key_name) != "hash":
+                return {"success": False, "error": f"Key '{key_name}' is not a hash"}
+            
+            # Check if field exists
+            if not redis_conn.hexists(key_name, field):
+                return {"success": False, "error": f"Field '{field}' does not exist in hash"}
+            
+            # Update the field value
+            redis_conn.hset(key_name, field, new_value)
+            
+            return {"success": True, "error": None, "message": "Hash field value updated successfully"}
+            
+        except Exception as e:
+            logger.exception(f"Error updating hash field value for {instance_alias} in db {db_number} for key {key_name}", exc_info=True)
+            return {"success": False, "error": str(e)}
+
+    @classmethod
+    def update_zset_member_score(cls, instance_alias: str, db_number: int, key_name: str, member: str, new_score: float) -> Dict[str, Any]:
+        """
+        Update the score of an existing member in a Redis sorted set.
+        """
+        try:
+            redis_conn = cls.get_redis_connection(instance_alias)
+            redis_conn.select(db_number)
+            
+            # Check if key exists and is a sorted set
+            if not redis_conn.exists(key_name):
+                return {"success": False, "error": f"Key '{key_name}' does not exist"}
+            
+            if redis_conn.type(key_name) != "zset":
+                return {"success": False, "error": f"Key '{key_name}' is not a sorted set"}
+            
+            # Check if member exists
+            if redis_conn.zscore(key_name, member) is None:
+                return {"success": False, "error": f"Member '{member}' does not exist in sorted set"}
+            
+            # Update the member's score
+            redis_conn.zadd(key_name, {member: new_score})
+            
+            return {"success": True, "error": None, "message": "Sorted set member score updated successfully"}
+            
+        except Exception as e:
+            logger.exception(f"Error updating zset member score for {instance_alias} in db {db_number} for key {key_name}", exc_info=True)
+            return {"success": False, "error": str(e)}
