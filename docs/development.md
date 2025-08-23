@@ -119,14 +119,11 @@ pip install -r requirements.txt
 # Build and install the package
 make install
 
-# Install in development mode with dev dependencies
-make install_dev
-
 # Run all tests
 make test
 
 # Run tests with coverage
-make test-coverage
+make test_coverage
 
 # Clean build artifacts
 make clean
@@ -135,10 +132,10 @@ make clean
 make build
 
 # Upload to PyPI (maintainers only)
-make upload
+make publish
 
 # Serve documentation locally
-make docs-serve
+make docs_serve
 ```
 
 ## Project Structure

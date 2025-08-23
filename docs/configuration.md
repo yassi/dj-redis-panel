@@ -29,8 +29,8 @@ These settings apply to all Redis instances unless overridden at the instance le
 | Setting | Default | Description |
 |---------|---------|-------------|
 | `ALLOW_KEY_DELETE` | `False` | Allow deletion of Redis keys |
-| `ALLOW_KEY_EDIT` | `True` | Allow editing of key values |
-| `ALLOW_TTL_UPDATE` | `True` | Allow updating key TTL (expiration) |
+| `ALLOW_KEY_EDIT` | `False` | Allow editing of key values |
+| `ALLOW_TTL_UPDATE` | `False` | Allow updating key TTL (expiration) |
 | `CURSOR_PAGINATED_SCAN` | `False` | Use cursor-based pagination instead of page-based |
 | `CURSOR_PAGINATED_COLLECTIONS` | `False` | Use cursor-based pagination for key values like lists and hashes |
 
@@ -50,7 +50,7 @@ Controls whether users can delete Redis keys through the interface.
 
 Controls whether users can modify Redis key values.
 
-- **`True`**: Allows editing of key values
+- **`True`**: Allows editing of key values and collections (e.g. allow updates and deletes on lists, etc.)
 - **`False`**: Makes the interface read-only for key values
 
 #### `ALLOW_TTL_UPDATE`
