@@ -7,9 +7,10 @@ help:
 	@echo "Makefile targets:"
 	@echo "  make clean           Remove build artifacts"
 	@echo "  make build           Build sdist and wheel (in ./dist)"
+	@echo "  make install_requirements Install all dev dependencies"
 	@echo "  make install         Install package locally via wheel"
 	@echo "  make uninstall       Uninstall package wheel package"
-	@echo "  make install_dev     Install package and all dev dependencies"
+	@echo "  make uninstall_all   Uninstall all packages"
 	@echo "  make test_install    Check if package can be imported"
 	@echo "  make test            Run tests"
 	@echo "  make test_coverage   Run tests with coverage report"
@@ -25,24 +26,28 @@ clean:
 build: clean
 	python -m build
 
-install: build
-	pip install dist/*.whl
+install_requirements:
+	pip install -r requirements.txt
+
+install: install_requirements
+	pip install -e .
 
 uninstall:
 	pip uninstall -y $(PACKAGE_NAME) || true
 
-install_dev: build
-	pip install -r requirements.txt
+uninstall_all:
+	pip uninstall -y $(PACKAGE_NAME) || true
+	pip freeze | xargs pip uninstall -y || true
 
 test_install: build
 	pip uninstall -y $(PACKAGE_NAME) || true
-	pip install dist/*.whl
+	pip install -e .
 	python -c "import dj_redis_panel; print('✅ Import success!')"
 
-test: install_dev
+test: install
 	python -m pytest tests/
 
-test_coverage: install_dev
+test_coverage: install
 	pytest --cov=dj_redis_panel --cov-report=xml --cov-report=html --cov-report=term-missing
 
 coverage_html: test_coverage
