@@ -57,7 +57,7 @@ coverage_html: test_coverage
 publish:
 	twine upload --repository $(PYPI_REPO) dist/*
 
-docs: install_dev
+docs: install
 	mkdocs build
 
 docs_serve: docs

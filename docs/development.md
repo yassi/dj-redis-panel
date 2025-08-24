@@ -93,7 +93,7 @@ The project includes a Makefile with several useful commands for development.
 
 ```bash
 # Install in development mode with all dependencies
-make install_dev
+make install
 ```
 
 This command will:

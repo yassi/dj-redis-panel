@@ -30,7 +30,8 @@ jobs:
         run: |
           # NOTE: put your own distribution build steps here.
           python -m pip install build
-          make install_dev
+          make install
+          make build
 
       - name: Upload distributions
         uses: actions/upload-artifact@v4

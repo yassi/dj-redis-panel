@@ -32,7 +32,7 @@ jobs:
       - name: Install package and dependencies
         run: |
             pip install build
-            make install_dev
+            make install
             pip install "Django~=${{ matrix.django-version }}.0"
 
       - name: Run tests with coverage
