@@ -13,17 +13,27 @@
 
 
 {% block content %}
-        <!-- Pagination Mode Indicator -->
-        <div class="pagination-mode-indicator">
-            {% if use_cursor_pagination %}
-                <span class="badge cursor-mode">
-                    📄 {% trans 'CURSOR PAGINATION' %}
-                </span>
-            {% else %}
-                <span class="badge page-mode">
-                    🔢 {% trans 'PAGE PAGINATION' %}
-                </span>
-            {% endif %}
+        <!-- Top Action Bar -->
+        <div class="top-action-bar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <!-- Pagination Mode Indicator -->
+            <div class="pagination-mode-indicator">
+                {% if use_cursor_pagination %}
+                    <span class="badge cursor-mode">
+                        📄 {% trans 'CURSOR PAGINATION' %}
+                    </span>
+                {% else %}
+                    <span class="badge page-mode">
+                        🔢 {% trans 'PAGE PAGINATION' %}
+                    </span>
+                {% endif %}
+            </div>
+            
+            <!-- Add New Key Button -->
+            <div class="add-key-button">
+                <a href="{% url 'dj_redis_panel:key_add' instance_alias selected_db %}" class="addlink">
+                    {% trans 'Add New Key' %}
+                </a>
+            </div>
         </div>
 
 
