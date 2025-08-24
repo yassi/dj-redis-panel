@@ -38,39 +38,39 @@
             <!-- Key Type Information Table -->
             <div class="help-text" style="margin-bottom: 25px;">
                 <h3>{% trans 'Redis Key Types:' %}</h3>
-                <table class="key-type-info-table" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                <table id="result_list">
                     <thead>
-                        <tr style="background-color: var(--darkened-bg, rgba(0, 0, 0, 0.05));">
-                            <th style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd); text-align: left; font-weight: bold;">{% trans 'Type' %}</th>
-                            <th style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd); text-align: left; font-weight: bold;">{% trans 'Description' %}</th>
-                            <th style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd); text-align: left; font-weight: bold;">{% trans 'Use Cases' %}</th>
+                        <tr>
+                            <th scope="col">{% trans 'Type' %}</th>
+                            <th scope="col">{% trans 'Description' %}</th>
+                            <th scope="col">{% trans 'Use Cases' %}</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd);"><strong>{% trans 'String' %}</strong></td>
-                            <td style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd);">{% trans 'Simple text or binary data value' %}</td>
-                            <td style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd);">{% trans 'Caching, counters, flags, JSON data' %}</td>
+                        <tr class="row1">
+                            <td><strong>{% trans 'String' %}</strong></td>
+                            <td>{% trans 'Simple text or binary data value' %}</td>
+                            <td>{% trans 'Caching, counters, flags, JSON data' %}</td>
                         </tr>
-                        <tr style="background-color: var(--darkened-bg, rgba(0, 0, 0, 0.02));">
-                            <td style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd);"><strong>{% trans 'List' %}</strong></td>
-                            <td style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd);">{% trans 'Ordered collection of strings' %}</td>
-                            <td style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd);">{% trans 'Queues, activity feeds, recent items' %}</td>
+                        <tr class="row2">
+                            <td><strong>{% trans 'List' %}</strong></td>
+                            <td>{% trans 'Ordered collection of strings' %}</td>
+                            <td>{% trans 'Queues, activity feeds, recent items' %}</td>
                         </tr>
-                        <tr>
-                            <td style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd);"><strong>{% trans 'Set' %}</strong></td>
-                            <td style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd);">{% trans 'Unordered collection of unique strings' %}</td>
-                            <td style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd);">{% trans 'Tags, unique visitors, permissions' %}</td>
+                        <tr class="row1">
+                            <td><strong>{% trans 'Set' %}</strong></td>
+                            <td>{% trans 'Unordered collection of unique strings' %}</td>
+                            <td>{% trans 'Tags, unique visitors, permissions' %}</td>
                         </tr>
-                        <tr style="background-color: var(--darkened-bg, rgba(0, 0, 0, 0.02));">
-                            <td style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd);"><strong>{% trans 'Sorted Set' %}</strong></td>
-                            <td style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd);">{% trans 'Ordered collection of unique strings with scores' %}</td>
-                            <td style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd);">{% trans 'Leaderboards, rankings, time-series data' %}</td>
+                        <tr class="row2">
+                            <td><strong>{% trans 'Sorted Set' %}</strong></td>
+                            <td>{% trans 'Ordered collection of unique strings with scores' %}</td>
+                            <td>{% trans 'Leaderboards, rankings, time-series data' %}</td>
                         </tr>
-                        <tr>
-                            <td style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd);"><strong>{% trans 'Hash' %}</strong></td>
-                            <td style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd);">{% trans 'Collection of field-value pairs' %}</td>
-                            <td style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd);">{% trans 'User profiles, settings, object storage' %}</td>
+                        <tr class="row1">
+                            <td><strong>{% trans 'Hash' %}</strong></td>
+                            <td>{% trans 'Collection of field-value pairs' %}</td>
+                            <td>{% trans 'User profiles, settings, object storage' %}</td>
                         </tr>
                     </tbody>
                 </table>
