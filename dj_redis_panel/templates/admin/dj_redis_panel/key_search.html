@@ -28,12 +28,12 @@
                 {% endif %}
             </div>
             
-            <!-- Add New Key Button -->
-            <div class="add-key-button">
-                <a href="{% url 'dj_redis_panel:key_add' instance_alias selected_db %}" class="addlink">
-                    {% trans 'Add New Key' %}
-                </a>
-            </div>
+                          <!-- Add New Key Button -->
+              <div>
+                  <button class="button default" onclick="window.location.href='{% url 'dj_redis_panel:key_add' instance_alias selected_db %}'">
+                      {% trans 'Add New Key' %}
+                  </button>
+              </div>
         </div>
 
 
