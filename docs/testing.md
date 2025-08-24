@@ -31,7 +31,7 @@ calling views.
 Before running tests, ensure you have:
 
 - **Redis server** running on `127.0.0.1:6379` - consider running `docker compose up redis -d`
-- **Test databases** 13, 14, and 15 available
+- **Test databases** 12-15 available
 - **Development dependencies** run `make install`
 
 ### Quick Test Commands
