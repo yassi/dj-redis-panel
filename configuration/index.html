@@ -982,12 +982,12 @@
 </tr>
 <tr>
 <td><code>ALLOW_KEY_EDIT</code></td>
-<td><code>True</code></td>
+<td><code>False</code></td>
 <td>Allow editing of key values</td>
 </tr>
 <tr>
 <td><code>ALLOW_TTL_UPDATE</code></td>
-<td><code>True</code></td>
+<td><code>False</code></td>
 <td>Allow updating key TTL (expiration)</td>
 </tr>
 <tr>
@@ -1016,7 +1016,7 @@
 <h4 id="allow_key_edit"><code>ALLOW_KEY_EDIT</code></h4>
 <p>Controls whether users can modify Redis key values.</p>
 <ul>
-<li><strong><code>True</code></strong>: Allows editing of key values</li>
+<li><strong><code>True</code></strong>: Allows editing of key values and collections (e.g. allow updates and deletes on lists, etc.)</li>
 <li><strong><code>False</code></strong>: Makes the interface read-only for key values</li>
 </ul>
 <h4 id="allow_ttl_update"><code>ALLOW_TTL_UPDATE</code></h4>

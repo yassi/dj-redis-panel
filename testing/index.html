@@ -764,15 +764,15 @@ calling views.</li>
 <p>Before running tests, ensure you have:</p>
 <ul>
 <li><strong>Redis server</strong> running on <code>127.0.0.1:6379</code> - consider running <code>docker compose up redis -d</code></li>
-<li><strong>Test databases</strong> 13, 14, and 15 available</li>
-<li><strong>Development dependencies</strong> run <code>make install_dev</code></li>
+<li><strong>Test databases</strong> 12-15 available</li>
+<li><strong>Development dependencies</strong> run <code>make install</code></li>
 </ul>
 <h3 id="quick-test-commands">Quick Test Commands</h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Run all tests</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>make<span class="w"> </span><span class="nb">test</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Run with coverage report</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>make<span class="w"> </span>test-coverage
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>make<span class="w"> </span>test_coverage
 </span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
 </span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># Run specific test file</span>
 </span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>pytest<span class="w"> </span>tests/test_views.py
@@ -829,8 +829,9 @@ calling views.</li>
 </span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="p">}</span>
 </span></code></pre></div>
 <h3 id="test-database-setup">Test Database Setup</h3>
-<p>Tests use Redis databases 13, 14, and 15 to avoid interfering with development data:</p>
+<p>Tests use Redis databases 12, 13, 14, and 15 to avoid interfering with development data:</p>
 <ul>
+<li><strong>Database 12</strong>: Reserved for large collection testing (e.g. pagination related tests)</li>
 <li><strong>Database 13</strong>: Primary test database</li>
 <li><strong>Database 14</strong>: Secondary test database for multi-instance tests</li>
 <li><strong>Database 15</strong>: Reserved for special test cases</li>

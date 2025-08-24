@@ -627,22 +627,22 @@
 <p>Django Redis Panel seamlessly integrates into your existing Django admin interface, providing a powerful tool for Redis database management without requiring any model definitions or database migrations.</p>
 <h2 id="key-features">Key Features</h2>
 <ul>
-<li>🔍 <strong>Browse Redis Keys</strong>: Search and filter Redis keys with pattern matching</li>
-<li>📊 <strong>Instance Overview</strong>: Monitor Redis instance metrics and database statistics  </li>
-<li>🔧 <strong>Key Management</strong>: View, edit, and delete Redis keys with support for all data types</li>
-<li>🎛️ <strong>Feature Toggles</strong>: Granular control over operations (delete, edit, TTL updates)</li>
-<li>📄 <strong>Pagination</strong>: Both traditional page-based and cursor-based pagination support</li>
-<li>🎨 <strong>Django Admin Integration</strong>: Seamless integration with Django admin styling and dark mode</li>
-<li>🔒 <strong>Permission Control</strong>: Respects Django admin permissions and staff-only access</li>
-<li>🌐 <strong>Multiple Instances</strong>: Support for multiple Redis instances with different configurations</li>
+<li><strong>Browse Redis Keys</strong>: Search and filter Redis keys with pattern matching</li>
+<li><strong>Instance Overview</strong>: Monitor Redis instance metrics and database statistics  </li>
+<li><strong>Key Management</strong>: View, edit, and delete Redis keys with support for all data types</li>
+<li><strong>Feature Toggles</strong>: Granular control over operations (delete, edit, TTL updates)</li>
+<li><strong>Pagination</strong>: Both traditional page-based and cursor-based pagination support</li>
+<li><strong>Django Admin Integration</strong>: Seamless integration with Django admin styling and dark mode</li>
+<li><strong>Permission Control</strong>: Respects Django admin permissions and staff-only access</li>
+<li><strong>Multiple Instances</strong>: Support for multiple Redis instances with different configurations</li>
 </ul>
 <h2 id="supported-redis-data-types">Supported Redis Data Types</h2>
 <ul>
 <li><strong>String</strong>: View and edit string values</li>
-<li><strong>List</strong>: Browse list items with pagination</li>
-<li><strong>Set</strong>: View set members</li>
-<li><strong>Hash</strong>: Display hash fields and values in a table format</li>
-<li><strong>Sorted Set</strong>: Show sorted set members with scores</li>
+<li><strong>List</strong>: Browse list items with pagination and edit/delete list items</li>
+<li><strong>Set</strong>: View set members and delete</li>
+<li><strong>Hash</strong>: Display hash fields and values in a table format. Ability to edit hash values and delete hash entries.</li>
+<li><strong>Sorted Set</strong>: Show sorted set members with scores. Able to delete set members and edit scores.</li>
 </ul>
 <h2 id="requirements">Requirements</h2>
 <ul>
