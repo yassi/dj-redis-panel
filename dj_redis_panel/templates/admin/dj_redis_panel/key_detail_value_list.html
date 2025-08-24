@@ -16,13 +16,43 @@
             <tr>
                 <th>{% trans 'Index' %}</th>
                 <th>{% trans 'Value' %}</th>
+                {% if allow_key_edit %}
+                <th>{% trans 'Actions' %}</th>
+                {% endif %}
             </tr>
         </thead>
         <tbody>
             {% for item in key_data.value %}
             <tr>
                 <td><code>{% if is_paginated %}{{ start_index|add:forloop.counter0 }}{% else %}{{ forloop.counter0 }}{% endif %}</code></td>
-                <td><code>{{ item }}</code></td>
+                <td>
+                    {% if allow_key_edit %}
+                    <form method="post" style="display: inline-block; width: 100%;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_list_item">
+                        <input type="hidden" name="index" value="{% if is_paginated %}{{ start_index|add:forloop.counter0 }}{% else %}{{ forloop.counter0 }}{% endif %}">
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <input type="text" name="new_value" value="{{ item }}" class="inline-edit-input" style="flex: 1;">
+                            <button type="submit" class="inline-edit-btn" title="{% trans 'Update item' %}">Save</button>
+                        </div>
+                    </form>
+                    {% else %}
+                    <code>{{ item }}</code>
+                    {% endif %}
+                </td>
+                {% if allow_key_edit %}
+                <td>
+                    <form method="post" style="display: inline;" 
+                          onsubmit="return confirm('{% trans 'Are you sure you want to delete this item?' %}');">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="delete_list_item">
+                        <input type="hidden" name="index" value="{% if is_paginated %}{{ start_index|add:forloop.counter0 }}{% else %}{{ forloop.counter0 }}{% endif %}">
+                        <button type="submit" class="delete-member-btn" title="{% trans 'Delete item' %}">
+                            🗑️
+                        </button>
+                    </form>
+                </td>
+                {% endif %}
             </tr>
             {% endfor %}
         </tbody>
@@ -36,7 +66,4 @@
     {% else %}
     <p class="quiet">{% trans 'List is empty' %}</p>
     {% endif %}
-    <div class="help">
-        {% trans 'List editing is not supported in this interface. Use Redis CLI or other tools for complex list operations.' %}
-    </div>
 </div>

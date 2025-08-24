@@ -31,8 +31,8 @@ calling views.
 Before running tests, ensure you have:
 
 - **Redis server** running on `127.0.0.1:6379` - consider running `docker compose up redis -d`
-- **Test databases** 13, 14, and 15 available
-- **Development dependencies** run `make install_dev`
+- **Test databases** 12-15 available
+- **Development dependencies** run `make install`
 
 ### Quick Test Commands
 
@@ -41,7 +41,7 @@ Before running tests, ensure you have:
 make test
 
 # Run with coverage report
-make test-coverage
+make test_coverage
 
 # Run specific test file
 pytest tests/test_views.py
@@ -112,8 +112,9 @@ DJ_REDIS_PANEL_SETTINGS = {
 
 ### Test Database Setup
 
-Tests use Redis databases 13, 14, and 15 to avoid interfering with development data:
+Tests use Redis databases 12, 13, 14, and 15 to avoid interfering with development data:
 
+- **Database 12**: Reserved for large collection testing (e.g. pagination related tests)
 - **Database 13**: Primary test database
 - **Database 14**: Secondary test database for multi-instance tests
 - **Database 15**: Reserved for special test cases

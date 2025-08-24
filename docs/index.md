@@ -10,22 +10,22 @@ Django Redis Panel seamlessly integrates into your existing Django admin interfa
 
 ## Key Features
 
-- 🔍 **Browse Redis Keys**: Search and filter Redis keys with pattern matching
-- 📊 **Instance Overview**: Monitor Redis instance metrics and database statistics  
-- 🔧 **Key Management**: View, edit, and delete Redis keys with support for all data types
-- 🎛️ **Feature Toggles**: Granular control over operations (delete, edit, TTL updates)
-- 📄 **Pagination**: Both traditional page-based and cursor-based pagination support
-- 🎨 **Django Admin Integration**: Seamless integration with Django admin styling and dark mode
-- 🔒 **Permission Control**: Respects Django admin permissions and staff-only access
-- 🌐 **Multiple Instances**: Support for multiple Redis instances with different configurations
+- **Browse Redis Keys**: Search and filter Redis keys with pattern matching
+- **Instance Overview**: Monitor Redis instance metrics and database statistics  
+- **Key Management**: View, edit, and delete Redis keys with support for all data types
+- **Feature Toggles**: Granular control over operations (delete, edit, TTL updates)
+- **Pagination**: Both traditional page-based and cursor-based pagination support
+- **Django Admin Integration**: Seamless integration with Django admin styling and dark mode
+- **Permission Control**: Respects Django admin permissions and staff-only access
+- **Multiple Instances**: Support for multiple Redis instances with different configurations
 
 ## Supported Redis Data Types
 
 - **String**: View and edit string values
-- **List**: Browse list items with pagination
-- **Set**: View set members
-- **Hash**: Display hash fields and values in a table format
-- **Sorted Set**: Show sorted set members with scores
+- **List**: Browse list items with pagination and edit/delete list items
+- **Set**: View set members and delete
+- **Hash**: Display hash fields and values in a table format. Ability to edit hash values and delete hash entries.
+- **Sorted Set**: Show sorted set members with scores. Able to delete set members and edit scores.
 
 
 ## Requirements

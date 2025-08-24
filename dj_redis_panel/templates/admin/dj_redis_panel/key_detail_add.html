@@ -1,0 +1,120 @@
+{% load i18n %}
+{# Add elements template for all key types #}
+
+<fieldset class="module aligned">
+    <h2>{% trans 'Add Elements' %}</h2>
+    <br>
+    
+    {% if not allow_key_edit %}
+    <div class="form-row">
+        <div class="help" style="color: #ba2121; font-weight: bold;">
+            {% trans 'Element adding is disabled for this instance. Enable ALLOW_KEY_EDIT in your configuration to add elements to Redis keys.' %}
+        </div>
+    </div>
+    <br>
+    {% endif %}
+    
+    {% if key_data.type == "string" %}
+    <!-- String keys don't support adding elements -->
+    <div class="form-row">
+        <div class="help">
+            {% trans 'String keys do not support adding elements. Use the value editing section to modify the string content or add a new key and string value.' %}
+        </div>
+    </div>
+    
+    {% elif key_data.type == "list" %}
+    <!-- List: Add item to start or end -->
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_list_item">
+        <div class="form-row">
+            <div class="field-box">
+                <label for="new_value">{% trans 'Value:' %}</label>
+                <input type="text" id="new_value" name="new_value" required class="vTextField" {% if not allow_key_edit %}disabled{% endif %}>
+                <div class="help">{% trans 'Enter the value to add to the list.' %}</div>
+            </div>
+            <div class="field-box">
+                <label for="position">{% trans 'Position:' %}</label>
+                <select id="position" name="position" class="vSelect" {% if not allow_key_edit %}disabled{% endif %}>
+                    <option value="end">{% trans 'End of list (RPUSH)' %}</option>
+                    <option value="start">{% trans 'Start of list (LPUSH)' %}</option>
+                </select>
+                <div class="help">{% trans 'Choose where to add the new item in the list.' %}</div>
+            </div>
+        </div>
+        <div class="submit-row">
+            <input type="submit" value="{% if allow_key_edit %}{% trans 'Add to List' %}{% else %}{% trans 'Adding Disabled' %}{% endif %}" class="default" {% if not allow_key_edit %}disabled{% endif %}>
+        </div>
+    </form>
+    
+    {% elif key_data.type == "set" %}
+    <!-- Set: Add member -->
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_set_member">
+        <div class="form-row">
+            <div class="field-box">
+                <label for="new_member">{% trans 'Member:' %}</label>
+                <input type="text" id="new_member" name="new_member" required class="vTextField" {% if not allow_key_edit %}disabled{% endif %}>
+                <div class="help">{% trans 'Enter the member to add to the set. Duplicates will be ignored.' %}</div>
+            </div>
+        </div>
+        <div class="submit-row">
+            <input type="submit" value="{% if allow_key_edit %}{% trans 'Add to Set' %}{% else %}{% trans 'Adding Disabled' %}{% endif %}" class="default" {% if not allow_key_edit %}disabled{% endif %}>
+        </div>
+    </form>
+    
+    {% elif key_data.type == "zset" %}
+    <!-- Sorted Set: Add member with score -->
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_zset_member">
+        <div class="form-row">
+            <div class="field-box">
+                <label for="new_score">{% trans 'Score:' %}</label>
+                <input type="number" step="any" id="new_score" name="new_score" required class="vFloatField" {% if not allow_key_edit %}disabled{% endif %}>
+                <div class="help">{% trans 'Enter the numeric score for the member.' %}</div>
+            </div>
+            <div class="field-box">
+                <label for="new_member">{% trans 'Member:' %}</label>
+                <input type="text" id="new_member" name="new_member" required class="vTextField" {% if not allow_key_edit %}disabled{% endif %}>
+                <div class="help">{% trans 'Enter the member to add to the sorted set.' %}</div>
+            </div>
+        </div>
+        <div class="submit-row">
+            <input type="submit" value="{% if allow_key_edit %}{% trans 'Add to Sorted Set' %}{% else %}{% trans 'Adding Disabled' %}{% endif %}" class="default" {% if not allow_key_edit %}disabled{% endif %}>
+        </div>
+    </form>
+    
+    {% elif key_data.type == "hash" %}
+    <!-- Hash: Add field-value pair -->
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_hash_field">
+        <div class="form-row">
+            <div class="field-box">
+                <label for="new_field">{% trans 'Field:' %}</label>
+                <input type="text" id="new_field" name="new_field" required class="vTextField" {% if not allow_key_edit %}disabled{% endif %}>
+                <div class="help">{% trans 'Enter the field name for the hash.' %}</div>
+            </div>
+            <div class="field-box">
+                <label for="new_value">{% trans 'Value:' %}</label>
+                <input type="text" id="new_value" name="new_value" required class="vTextField" {% if not allow_key_edit %}disabled{% endif %}>
+                <div class="help">{% trans 'Enter the value for the field.' %}</div>
+            </div>
+        </div>
+        <div class="submit-row">
+            <input type="submit" value="{% if allow_key_edit %}{% trans 'Add to Hash' %}{% else %}{% trans 'Adding Disabled' %}{% endif %}" class="default" {% if not allow_key_edit %}disabled{% endif %}>
+        </div>
+    </form>
+    
+    {% else %}
+    <!-- Unsupported key type -->
+    <div class="form-row">
+        <div class="help">
+            {% trans 'Adding elements is not supported for this key type:' %} {{ key_data.type }}
+        </div>
+    </div>
+    {% endif %}
+    
+</fieldset>

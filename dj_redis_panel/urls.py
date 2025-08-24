@@ -13,7 +13,7 @@ urlpatterns = [
     ),
     path(
         "<str:instance_alias>/db/<int:db_number>/key/<path:key_name>",
-        views.key_detail,
+        views.KeyDetailView.as_view(),
         name="key_detail",
     ),
 ]

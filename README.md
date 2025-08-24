@@ -16,14 +16,14 @@ A Django Admin panel for browsing, inspecting, and managing Redis keys. No postg
 
 ## Features
 
-- 🔍 **Browse Redis Keys**: Search and filter Redis keys with pattern matching
-- 📊 **Instance Overview**: Monitor Redis instance metrics and database statistics  
-- 🔧 **Key Management**: View, edit, and delete Redis keys with support for all data types
-- 🎛️ **Feature Toggles**: Granular control over operations (delete, edit, TTL updates)
-- 📄 **Pagination**: Both traditional page-based and cursor-based pagination support
-- 🎨 **Django Admin Integration**: Seamless integration with Django admin styling and dark mode
-- 🔒 **Permission Control**: Respects Django admin permissions and staff-only access
-- 🌐 **Multiple Instances**: Support for multiple Redis instances with different configurations
+- **Browse Redis Keys**: Search and filter Redis keys with pattern matching
+- **Instance Overview**: Monitor Redis instance metrics and database statistics  
+- **Key Management**: View, edit, and delete Redis keys with support for all data types
+- **Feature Toggles**: Granular control over operations (delete, edit, TTL updates)
+- **Pagination**: Both traditional page-based and cursor-based pagination support
+- **Django Admin Integration**: Seamless integration with Django admin styling and dark mode
+- **Permission Control**: Respects Django admin permissions and staff-only access
+- **Multiple Instances**: Support for multiple Redis instances with different configurations
 
 ## Supported Redis Data Types
 
@@ -272,15 +272,8 @@ A make file is included in the repository root with multiple commands for buildi
 and maintaining this project. The best approach is to start by using one of the
 package installation commands found below:
 ```bash
-# Build and install a wheel for this project
-# Also install all dev dependencies such as pytest and other utilities
-make install_dev
-
-# Build and install a wheel for this project
+# Install all dependencies and dj-redis-panel into your current env
 make install
-
-# build and install all dev dependencies and run all tests
-make test
 ```
 
 ### 4. Set Up Example Project
@@ -317,17 +310,11 @@ The project includes a comprehensive test suite. You can run them by using make 
 by invoking pytest directly:
 
 ```bash
-# run using make which will also install all dependencies (recommended)
+# build and install all dev dependencies and run all tests
 make test
 
-# run using pytest directly
-pytest tests/
-
-# Run with coverage
-pytest tests/ --cov=dj_redis_panel
-
-# Run specific test file
-pytest tests/test_views.py
+# Additionally generate coverage reports in multiple formats
+make test_coverage
 ```
 
 **Note**: Tests require a running Redis server on `127.0.0.1:6379`. The tests use databases 13, 14, and 15 for isolation and automatically clean up after each test.
