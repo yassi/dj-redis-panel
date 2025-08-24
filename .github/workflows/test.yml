@@ -31,7 +31,6 @@ jobs:
 
       - name: Install package and dependencies
         run: |
-            pip install build
             make install
             pip install "Django~=${{ matrix.django-version }}.0"
 

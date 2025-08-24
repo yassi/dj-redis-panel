@@ -5,20 +5,20 @@ PYPI_REPO ?= pypi   # can be 'testpypi' or 'pypi'
 
 help:
 	@echo "Makefile targets:"
-	@echo "  make clean           Remove build artifacts"
-	@echo "  make build           Build sdist and wheel (in ./dist)"
-	@echo "  make install_requirements Install all dev dependencies"
-	@echo "  make install         Install package locally via wheel"
-	@echo "  make uninstall       Uninstall package wheel package"
-	@echo "  make uninstall_all   Uninstall all packages"
-	@echo "  make test_install    Check if package can be imported"
-	@echo "  make test            Run tests"
-	@echo "  make test_coverage   Run tests with coverage report"
-	@echo "  make coverage_html   Generate HTML coverage report"
-	@echo "  make publish         Publish package to PyPI"
-	@echo "  make docs            Build documentation"
-	@echo "  make docs_serve      Serve documentation locally"
-	@echo "  make docs_push       Deploy documentation to GitHub Pages"
+	@echo "  make clean           		Remove build artifacts"
+	@echo "  make build           		Build sdist and wheel (in ./dist)"
+	@echo "  make install_requirements 	Install all dev dependencies"
+	@echo "  make install         		Install dependencies and package in editable mode"
+	@echo "  make uninstall       		Uninstall package"
+	@echo "  make uninstall_all   		Uninstall all packages"
+	@echo "  make test_install    		Check if package can be imported"
+	@echo "  make test            		Run tests"
+	@echo "  make test_coverage   		Run tests with coverage report"
+	@echo "  make coverage_html   		Generate HTML coverage report"
+	@echo "  make publish         		Publish package to PyPI"
+	@echo "  make docs            		Build documentation"
+	@echo "  make docs_serve      		Serve documentation locally"
+	@echo "  make docs_push       		Deploy documentation to GitHub Pages"
 
 clean:
 	rm -rf build dist *.egg-info
@@ -37,7 +37,11 @@ uninstall:
 
 uninstall_all:
 	pip uninstall -y $(PACKAGE_NAME) || true
-	pip freeze | xargs pip uninstall -y || true
+	pip uninstall -y -r requirements.txt || true
+	@echo "All packages in requirements.txt uninstalled"
+	@echo "Note that some dependent packages may still be installed"
+	@echo "To uninstall all packages, run 'pip freeze | xargs pip uninstall -y'"
+	@echo "Do this at your own risk. Use a python virtual environment always."
 
 test_install: build
 	pip uninstall -y $(PACKAGE_NAME) || true
