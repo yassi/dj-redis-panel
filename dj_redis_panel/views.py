@@ -676,3 +676,63 @@ class KeyDetailView(View):
             "range_start": key_data.get("range_start"),
             "range_end": key_data.get("range_end"),
         }
+
+
+@staff_member_required
+def key_add(request, instance_alias, db_number):
+    """View for creating new Redis keys"""
+    instances = RedisPanelUtils.get_instances()
+
+    # Validate instance exists
+    if instance_alias not in instances:
+        raise Http404(f"Redis instance '{instance_alias}' not found")
+
+    instance_config = instances[instance_alias]
+    selected_db = int(db_number)
+    
+    # Check if key creation is allowed (using ALLOW_KEY_EDIT feature flag)
+    allow_key_edit = RedisPanelUtils.is_feature_enabled(instance_alias, "ALLOW_KEY_EDIT")
+    
+    error_message = None
+    success_message = None
+    
+    if request.method == "POST":
+        if not allow_key_edit:
+            error_message = "Key creation is disabled for this instance"
+        else:
+            key_name = request.POST.get("key_name", "").strip()
+            key_type = request.POST.get("key_type", "string")
+            
+            # Validate input
+            if not key_name:
+                error_message = "Key name is required"
+            elif key_type not in ["string", "list", "set", "zset", "hash"]:
+                error_message = "Invalid key type selected"
+            else:
+                # Create the key
+                result = RedisPanelUtils.create_key(instance_alias, selected_db, key_name, key_type)
+                
+                if result["success"]:
+                    # Redirect to key detail view
+                    return HttpResponseRedirect(
+                        reverse("dj_redis_panel:key_detail", args=[instance_alias, selected_db, key_name])
+                    )
+                else:
+                    error_message = result["error"]
+
+    context = {
+        "title": f"Add New Key - {instance_alias}::DB{selected_db}",
+        "opts": None,
+        "has_permission": True,
+        "site_title": admin.site.site_title,
+        "site_header": admin.site.site_header,
+        "site_url": admin.site.site_url,
+        "user": request.user,
+        "instance_alias": instance_alias,
+        "instance_config": instance_config,
+        "selected_db": selected_db,
+        "allow_key_edit": allow_key_edit,
+        "error_message": error_message,
+        "success_message": success_message,
+    }
+    return render(request, "admin/dj_redis_panel/key_add.html", context)

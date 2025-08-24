@@ -1,0 +1,126 @@
+{% extends "admin/dj_redis_panel/base.html" %}
+{% load i18n admin_urls static %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+    &rsaquo; <a href="{% url 'dj_redis_panel:index' %}">{% trans 'Redis Instances' %}</a>
+    &rsaquo; <a href="{% url 'dj_redis_panel:instance_overview' instance_alias %}">{{ instance_alias }}</a>
+    &rsaquo; <a href="{% url 'dj_redis_panel:key_search' instance_alias selected_db %}">{% trans 'Search Keys' %} (db:{{ selected_db }})</a>
+    &rsaquo; {% trans 'Add New Key' %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="module key-add">
+    {% if success_message %}
+    <div class="messagelist">
+        <div class="success">{{ success_message }}</div>
+    </div>
+    {% endif %}
+    
+    {% if error_message %}
+    <div class="messagelist">
+        <div class="error">{{ error_message }}</div>
+    </div>
+    {% endif %}
+    
+    <div class="module">
+        <h2>{% trans 'Add New Key' %}</h2>
+        <br>
+        
+        {% if not allow_key_edit %}
+            <div class="errors">
+                <p><strong>{% trans 'Error:' %}</strong> {% trans 'Key creation is disabled for this instance.' %}</p>
+                <p><a href="{% url 'dj_redis_panel:key_search' instance_alias selected_db %}" class="button">{% trans 'Back to Key Search' %}</a></p>
+            </div>
+        {% else %}
+            <!-- Key Type Information Table -->
+            <div class="help-text" style="margin-bottom: 25px;">
+                <h3>{% trans 'Redis Key Types:' %}</h3>
+                <table id="result_list">
+                    <thead>
+                        <tr>
+                            <th scope="col">{% trans 'Type' %}</th>
+                            <th scope="col">{% trans 'Description' %}</th>
+                            <th scope="col">{% trans 'Use Cases' %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="row1">
+                            <td><strong>{% trans 'String' %}</strong></td>
+                            <td>{% trans 'Simple text or binary data value' %}</td>
+                            <td>{% trans 'Caching, counters, flags, JSON data' %}</td>
+                        </tr>
+                        <tr class="row2">
+                            <td><strong>{% trans 'List' %}</strong></td>
+                            <td>{% trans 'Ordered collection of strings' %}</td>
+                            <td>{% trans 'Queues, activity feeds, recent items' %}</td>
+                        </tr>
+                        <tr class="row1">
+                            <td><strong>{% trans 'Set' %}</strong></td>
+                            <td>{% trans 'Unordered collection of unique strings' %}</td>
+                            <td>{% trans 'Tags, unique visitors, permissions' %}</td>
+                        </tr>
+                        <tr class="row2">
+                            <td><strong>{% trans 'Sorted Set' %}</strong></td>
+                            <td>{% trans 'Ordered collection of unique strings with scores' %}</td>
+                            <td>{% trans 'Leaderboards, rankings, time-series data' %}</td>
+                        </tr>
+                        <tr class="row1">
+                            <td><strong>{% trans 'Hash' %}</strong></td>
+                            <td>{% trans 'Collection of field-value pairs' %}</td>
+                            <td>{% trans 'User profiles, settings, object storage' %}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p class="quiet" style="margin-top: 15px;">{% trans 'The key will be created with a placeholder item that you can edit or delete. After creation, you will be redirected to the key detail page where you can manage the content.' %}</p>
+            </div>
+            <br>
+            <form method="post" class="search-form">
+                {% csrf_token %}
+                
+                <fieldset class="module aligned">
+                    <div class="form-row">
+                        <div>
+                            <label for="id_key_name" class="required">{% trans 'Key Name:' %}</label>
+                            <input type="text" id="id_key_name" name="key_name" value="{{ request.POST.key_name|default:'' }}" 
+                                   class="vTextField" required maxlength="512" placeholder="{% trans 'Enter key name' %}">
+                            <div class="help">{% trans 'The name for your new Redis key. Must be unique within this database.' %}</div>
+                        </div>
+                    </div>
+                    <br>
+                    
+                    <div class="form-row">
+                        <div>
+                            <label for="id_key_type" class="required">{% trans 'Key Type:' %}</label>
+                            <select id="id_key_type" name="key_type" class="vSelectField" required>
+                                <option value="string" {% if request.POST.key_type == 'string' or not request.POST.key_type %}selected{% endif %}>
+                                    {% trans 'String' %}
+                                </option>
+                                <option value="list" {% if request.POST.key_type == 'list' %}selected{% endif %}>
+                                    {% trans 'List' %}
+                                </option>
+                                <option value="set" {% if request.POST.key_type == 'set' %}selected{% endif %}>
+                                    {% trans 'Set' %}
+                                </option>
+                                <option value="zset" {% if request.POST.key_type == 'zset' %}selected{% endif %}>
+                                    {% trans 'Sorted Set (ZSet)' %}
+                                </option>
+                                <option value="hash" {% if request.POST.key_type == 'hash' %}selected{% endif %}>
+                                    {% trans 'Hash' %}
+                                </option>
+                            </select>
+                            <div class="help">{% trans 'Select the type of Redis data structure for this key.' %}</div>
+                        </div>
+                    </div>
+                </fieldset>
+                
+                <div class="submit-row">
+                    <input type="submit" value="{% trans 'Create Key' %}" class="default" name="_save">
+                </div>
+            </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

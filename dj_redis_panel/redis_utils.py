@@ -1121,3 +1121,49 @@ class RedisPanelUtils:
         except Exception as e:
             logger.exception(f"Error updating zset member score for {instance_alias} in db {db_number} for key {key_name}", exc_info=True)
             return {"success": False, "error": str(e)}
+
+    @classmethod
+    def create_key(cls, instance_alias: str, db_number: int, key_name: str, key_type: str) -> Dict[str, Any]:
+        """
+        Create a new empty key of the specified type.
+        
+        Args:
+            instance_alias: Redis instance alias
+            db_number: Database number
+            key_name: Name of the key to create
+            key_type: Type of key to create ('string', 'list', 'set', 'zset', 'hash')
+            
+        Returns:
+            Dict with success status and any error information
+        """
+        try:
+            redis_conn = cls.get_redis_connection(instance_alias)
+            redis_conn.select(db_number)
+            
+            # Check if key already exists
+            if redis_conn.exists(key_name):
+                return {"success": False, "error": f"Key '{key_name}' already exists"}
+            
+            # Create empty key based on type
+            if key_type == "string":
+                redis_conn.set(key_name, "")
+            elif key_type == "list":
+                # For lists, add a clear placeholder that users can easily understand and remove
+                redis_conn.lpush(key_name, "[Edit or delete this placeholder item]")
+            elif key_type == "set":
+                # For sets, add a clear placeholder member
+                redis_conn.sadd(key_name, "[Edit or delete this placeholder member]")
+            elif key_type == "zset":
+                # For sorted sets, add a clear placeholder member with score 0
+                redis_conn.zadd(key_name, {"[Edit or delete this placeholder member]": 0})
+            elif key_type == "hash":
+                # For hashes, add a clear placeholder field-value pair
+                redis_conn.hset(key_name, "[placeholder_field]", "[Edit or delete this placeholder field]")
+            else:
+                return {"success": False, "error": f"Unsupported key type: {key_type}"}
+            
+            return {"success": True, "error": None, "message": f"Key '{key_name}' created successfully as {key_type}"}
+            
+        except Exception as e:
+            logger.exception(f"Error creating key for {instance_alias} in db {db_number} for key {key_name}", exc_info=True)
+            return {"success": False, "error": str(e)}
