@@ -35,7 +35,49 @@
                 <p><a href="{% url 'dj_redis_panel:key_search' instance_alias selected_db %}" class="button">{% trans 'Back to Key Search' %}</a></p>
             </div>
         {% else %}
-            <form method="post" class="key-add-form">
+            <!-- Key Type Information Table -->
+            <div class="help-text" style="margin-bottom: 25px;">
+                <h3>{% trans 'Redis Key Types:' %}</h3>
+                <table class="key-type-info-table" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                    <thead>
+                        <tr style="background-color: var(--darkened-bg, rgba(0, 0, 0, 0.05));">
+                            <th style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd); text-align: left; font-weight: bold;">{% trans 'Type' %}</th>
+                            <th style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd); text-align: left; font-weight: bold;">{% trans 'Description' %}</th>
+                            <th style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd); text-align: left; font-weight: bold;">{% trans 'Use Cases' %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd);"><strong>{% trans 'String' %}</strong></td>
+                            <td style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd);">{% trans 'Simple text or binary data value' %}</td>
+                            <td style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd);">{% trans 'Caching, counters, flags, JSON data' %}</td>
+                        </tr>
+                        <tr style="background-color: var(--darkened-bg, rgba(0, 0, 0, 0.02));">
+                            <td style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd);"><strong>{% trans 'List' %}</strong></td>
+                            <td style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd);">{% trans 'Ordered collection of strings' %}</td>
+                            <td style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd);">{% trans 'Queues, activity feeds, recent items' %}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd);"><strong>{% trans 'Set' %}</strong></td>
+                            <td style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd);">{% trans 'Unordered collection of unique strings' %}</td>
+                            <td style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd);">{% trans 'Tags, unique visitors, permissions' %}</td>
+                        </tr>
+                        <tr style="background-color: var(--darkened-bg, rgba(0, 0, 0, 0.02));">
+                            <td style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd);"><strong>{% trans 'Sorted Set' %}</strong></td>
+                            <td style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd);">{% trans 'Ordered collection of unique strings with scores' %}</td>
+                            <td style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd);">{% trans 'Leaderboards, rankings, time-series data' %}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd);"><strong>{% trans 'Hash' %}</strong></td>
+                            <td style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd);">{% trans 'Collection of field-value pairs' %}</td>
+                            <td style="padding: 8px 12px; border: 1px solid var(--border-color, #ddd);">{% trans 'User profiles, settings, object storage' %}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p class="quiet" style="margin-top: 15px;">{% trans 'The key will be created with a placeholder item that you can edit or delete. After creation, you will be redirected to the key detail page where you can manage the content.' %}</p>
+            </div>
+            <br>
+            <form method="post" class="search-form">
                 {% csrf_token %}
                 
                 <fieldset class="module aligned">
@@ -47,6 +89,7 @@
                             <div class="help">{% trans 'The name for your new Redis key. Must be unique within this database.' %}</div>
                         </div>
                     </div>
+                    <br>
                     
                     <div class="form-row">
                         <div>
@@ -75,21 +118,6 @@
                 
                 <div class="submit-row">
                     <input type="submit" value="{% trans 'Create Key' %}" class="default" name="_save">
-                    <a href="{% url 'dj_redis_panel:key_search' instance_alias selected_db %}" class="button cancel-link">
-                        {% trans 'Cancel' %}
-                    </a>
-                </div>
-                
-                <div class="help-text">
-                    <h3>{% trans 'Key Type Information:' %}</h3>
-                    <ul>
-                        <li><strong>{% trans 'String' %}:</strong> {% trans 'Simple text or binary data value' %}</li>
-                        <li><strong>{% trans 'List' %}:</strong> {% trans 'Ordered collection of strings (stack/queue operations)' %}</li>
-                        <li><strong>{% trans 'Set' %}:</strong> {% trans 'Unordered collection of unique strings' %}</li>
-                        <li><strong>{% trans 'Sorted Set (ZSet)' %}:</strong> {% trans 'Ordered collection of unique strings with scores' %}</li>
-                        <li><strong>{% trans 'Hash' %}:</strong> {% trans 'Collection of field-value pairs (like a dictionary)' %}</li>
-                    </ul>
-                    <p class="quiet">{% trans 'The key will be created with a placeholder item that you can edit or delete. After creation, you will be redirected to the key detail page where you can manage the content.' %}</p>
                 </div>
             </form>
         {% endif %}
