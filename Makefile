@@ -27,25 +27,25 @@ build: clean
 	python -m build
 
 install_requirements:
-	pip install -r requirements.txt
+	python -m pip install -r requirements.txt
 
 install: install_requirements
-	pip install -e .
+	python -m pip install -e .
 
 uninstall:
-	pip uninstall -y $(PACKAGE_NAME) || true
+	python -m pip uninstall -y $(PACKAGE_NAME) || true
 
 uninstall_all:
-	pip uninstall -y $(PACKAGE_NAME) || true
-	pip uninstall -y -r requirements.txt || true
+	python -m pip uninstall -y $(PACKAGE_NAME) || true
+	python -m pip uninstall -y -r requirements.txt || true
 	@echo "All packages in requirements.txt uninstalled"
 	@echo "Note that some dependent packages may still be installed"
 	@echo "To uninstall all packages, run 'pip freeze | xargs pip uninstall -y'"
 	@echo "Do this at your own risk. Use a python virtual environment always."
 
 test_install: build
-	pip uninstall -y $(PACKAGE_NAME) || true
-	pip install -e .
+	python -m pip uninstall -y $(PACKAGE_NAME) || true
+	python -m pip install -e .
 	python -c "import dj_redis_panel; print('✅ Import success!')"
 
 test: install
