@@ -9,6 +9,10 @@ logger = logging.getLogger(__name__)
 
 REDIS_PANEL_SETTINGS_NAME = "DJ_REDIS_PANEL_SETTINGS"
 
+# Default timeout values (in seconds)
+DEFAULT_SOCKET_TIMEOUT = 5.0  # Time to wait for socket operations
+DEFAULT_SOCKET_CONNECT_TIMEOUT = 5.0  # Time to wait for connection establishment
+
 
 class RedisPanelUtils:
     @classmethod
@@ -76,24 +80,48 @@ class RedisPanelUtils:
     @classmethod
     def _create_single_connection(cls, config: Dict[str, Any]) -> redis.Redis:
         """Create a connection to a single Redis instance."""
+        global_settings = cls.get_settings()
+
+        # Get timeout configuration for this instance or use global settings
+        # sane defaults are applied if no configuration is provided
+        socket_timeout = config.get(
+            "socket_timeout",
+            global_settings.get("socket_timeout", DEFAULT_SOCKET_TIMEOUT),
+        )
+        socket_connect_timeout = config.get(
+            "socket_connect_timeout",
+            global_settings.get(
+                "socket_connect_timeout", DEFAULT_SOCKET_CONNECT_TIMEOUT
+            ),
+        )
+
         connection_params = {
             "host": config.get("host", "127.0.0.1"),
             "port": config.get("port", 6379),
             "db": 0,  # Always connect to DB 0 initially, switch in UI
             "decode_responses": True,  # Always decode for management operations
+            "socket_timeout": socket_timeout,
+            "socket_connect_timeout": socket_connect_timeout,
         }
 
         if "url" in config:
             if config["url"].startswith("rediss://"):
-                logger.debug(f"Creating Redis connection using URL with SSL enabled")
+                logger.debug("Creating Redis connection using URL with SSL enabled")
                 return redis.Redis.from_url(
                     config["url"],
                     ssl_cert_reqs=config.get("ssl_cert_reqs", None),
                     decode_responses=True,
+                    socket_timeout=socket_timeout,
+                    socket_connect_timeout=socket_connect_timeout,
                 )
             else:
-                logger.debug(f"Creating Redis connection using URL with SSL disabled")
-                return redis.Redis.from_url(config["url"], decode_responses=True)
+                logger.debug("Creating Redis connection using URL with SSL disabled")
+                return redis.Redis.from_url(
+                    config["url"],
+                    decode_responses=True,
+                    socket_timeout=socket_timeout,
+                    socket_connect_timeout=socket_connect_timeout,
+                )
 
         # Optional connection parameters
         if "password" in config:
@@ -104,15 +132,9 @@ class RedisPanelUtils:
             connection_params["ssl"] = config["ssl"]
         if "ssl_cert_reqs" in config:
             connection_params["ssl_cert_reqs"] = config["ssl_cert_reqs"]
-        if "socket_timeout" in config:
-            connection_params["socket_timeout"] = config["socket_timeout"]
-        if "socket_connect_timeout" in config:
-            connection_params["socket_connect_timeout"] = config[
-                "socket_connect_timeout"
-            ]
 
         logger.debug(
-            f"Creating Redis connection with params for host: {connection_params['host']}, port: {connection_params['port']}"
+            f"Creating Redis connection with params for host: {connection_params['host']}, port: {connection_params['port']}, socket_timeout: {connection_params['socket_timeout']}, socket_connect_timeout: {connection_params['socket_connect_timeout']}"
         )
 
         return redis.Redis(**connection_params)
@@ -318,10 +340,6 @@ class RedisPanelUtils:
             # Use the provided cursor directly - no approximation needed
             current_cursor = cursor
             page_keys = []
-            scan_iterations = 0
-            max_scan_iterations = (
-                20  # Limit iterations per page to prevent infinite loops
-            )
 
             # Set scan_count to per_page for better cursor pagination behavior
             # This encourages Redis to return approximately the right number of keys per iteration
