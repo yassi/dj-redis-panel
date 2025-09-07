@@ -68,3 +68,13 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist/
+
+  docs-publish:
+    runs-on: ubuntu-latest
+    needs:
+      - release-build
+      - pypi-publish
+    steps:
+      - name: Publish documentation to GitHub Pages using MkDocs
+        run: |
+          make docs_push
