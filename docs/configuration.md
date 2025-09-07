@@ -33,6 +33,8 @@ These settings apply to all Redis instances unless overridden at the instance le
 | `ALLOW_TTL_UPDATE` | `False` | Allow updating key TTL (expiration) |
 | `CURSOR_PAGINATED_SCAN` | `False` | Use cursor-based pagination instead of page-based |
 | `CURSOR_PAGINATED_COLLECTIONS` | `False` | Use cursor-based pagination for key values like lists and hashes |
+| `socket_timeout` | `5.0` | Socket timeout in seconds for Redis operations |
+| `socket_connect_timeout` | `3.0` | Connection timeout in seconds for establishing Redis connections |
 
 ### Feature Flags Details
 
@@ -81,6 +83,32 @@ Controls the pagination method for key values such as lists, hashes, and sets
     For very large collections (e.g. keeping a very large leader board) use the cursor paginated
     method in order perform too many expensive queries on your instance.
 
+#### `socket_timeout`
+
+Controls how long to wait for Redis socket operations to complete.
+
+- **Default**: `5.0` seconds
+- **Purpose**: Prevents browser tabs from hanging indefinitely when Redis operations are slow
+- **Recommended values**: 
+  - Development: `5.0` - `10.0` seconds
+  - Production: `3.0` - `5.0` seconds
+
+!!! info "Socket Timeout"
+    This timeout applies to individual Redis commands after a connection has been established. If a Redis command takes longer than this timeout, it will fail with a timeout error instead of hanging the browser.
+
+#### `socket_connect_timeout`
+
+Controls how long to wait when establishing a connection to Redis.
+
+- **Default**: `3.0` seconds  
+- **Purpose**: Prevents long waits when Redis instances are unreachable
+- **Recommended values**:
+  - Local Redis: `1.0` - `3.0` seconds
+  - Remote Redis: `3.0` - `5.0` seconds
+
+!!! info "Connection Timeout"
+    This timeout applies only to the initial connection establishment. Once connected, `socket_timeout` governs individual operations.
+
 ## Instance Configuration
 
 Each Redis instance is configured under the `INSTANCES` key. You can define multiple instances with different settings.
@@ -118,7 +146,7 @@ Each Redis instance is configured under the `INSTANCES` key. You can define mult
 
 ### Per-Instance Feature Overrides
 
-You can override global feature flags for individual instances:
+You can override global feature flags and timeout settings for individual instances:
 
 ```python
 "instance_name": {
@@ -129,6 +157,9 @@ You can override global feature flags for individual instances:
         "ALLOW_KEY_DELETE": False,      # Override global setting
         "CURSOR_PAGINATED_SCAN": True,  # Use cursor pagination for this instance
     },
+    # Instance-specific timeout overrides
+    "socket_timeout": 10.0,         # Allow longer operations for this instance
+    "socket_connect_timeout": 5.0,  # Allow more time to connect to remote server
 }
 ```
 
@@ -143,6 +174,10 @@ DJ_REDIS_PANEL_SETTINGS = {
     "ALLOW_KEY_EDIT": True,
     "ALLOW_TTL_UPDATE": True,
     "CURSOR_PAGINATED_SCAN": False,
+    
+    # Relaxed timeouts for development
+    "socket_timeout": 10.0,
+    "socket_connect_timeout": 5.0,
     
     "INSTANCES": {
         "default": {
@@ -169,6 +204,10 @@ DJ_REDIS_PANEL_SETTINGS = {
     "ALLOW_TTL_UPDATE": False,
     "CURSOR_PAGINATED_SCAN": True,
     
+    # Conservative timeouts for production
+    "socket_timeout": 3.0,
+    "socket_connect_timeout": 2.0,
+    
     "INSTANCES": {
         "primary": {
             "description": "Primary Redis Cluster",
@@ -180,6 +219,8 @@ DJ_REDIS_PANEL_SETTINGS = {
             "features": {
                 "ALLOW_KEY_EDIT": True,  # Allow cache key editing
             },
+            # Allow slightly longer timeouts for cache operations
+            "socket_timeout": 5.0,
         },
         "sessions": {
             "description": "Session Storage",
@@ -199,12 +240,18 @@ DJ_REDIS_PANEL_SETTINGS = {
     "ALLOW_TTL_UPDATE": True,
     "CURSOR_PAGINATED_SCAN": True,
     
+    # Balanced timeouts for staging
+    "socket_timeout": 5.0,
+    "socket_connect_timeout": 3.0,
+    
     "INSTANCES": {
         "staging": {
             "description": "Staging Redis",
             "host": "staging-redis.example.com",
             "port": 6379,
             "password": "staging-password",
+            # Remote server may need longer connection timeout
+            "socket_connect_timeout": 5.0,
         },
         "debug": {
             "description": "Debug Redis (Full Access)",
@@ -213,6 +260,9 @@ DJ_REDIS_PANEL_SETTINGS = {
             "features": {
                 "ALLOW_KEY_DELETE": True,  # Allow deletion for debugging
             },
+            # Local debug instance can use faster timeouts
+            "socket_timeout": 2.0,
+            "socket_connect_timeout": 1.0,
         },
     }
 }
@@ -231,6 +281,9 @@ DJ_REDIS_PANEL_SETTINGS = {
     "ALLOW_KEY_EDIT": True,
     "ALLOW_TTL_UPDATE": True,
     "CURSOR_PAGINATED_SCAN": True,
+    # Default timeouts
+    "socket_timeout": 5.0,
+    "socket_connect_timeout": 3.0,
     "INSTANCES": {
         "default": {
             "description": "Default Redis",
@@ -245,8 +298,14 @@ DJ_REDIS_PANEL_SETTINGS = {
 if os.getenv("DJANGO_ENV") == "production":
     DJ_REDIS_PANEL_SETTINGS["ALLOW_KEY_DELETE"] = False
     DJ_REDIS_PANEL_SETTINGS["ALLOW_KEY_EDIT"] = False
+    # Stricter timeouts for production
+    DJ_REDIS_PANEL_SETTINGS["socket_timeout"] = 3.0
+    DJ_REDIS_PANEL_SETTINGS["socket_connect_timeout"] = 2.0
 else:
     DJ_REDIS_PANEL_SETTINGS["ALLOW_KEY_DELETE"] = True
+    # More relaxed timeouts for development
+    DJ_REDIS_PANEL_SETTINGS["socket_timeout"] = 10.0
+    DJ_REDIS_PANEL_SETTINGS["socket_connect_timeout"] = 5.0
 ```
 
 ## Configuration Validation

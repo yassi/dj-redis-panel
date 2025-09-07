@@ -128,17 +128,21 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Django Redis Panel Configuration
 DJ_REDIS_PANEL_SETTINGS = {
-    "ALLOW_KEY_DELETE": False, # Example of global feature
+    "ALLOW_KEY_DELETE": False,  # Example of global feature
     "ALLOW_KEY_EDIT": False,
     "ALLOW_TTL_UPDATE": False,
     "CURSOR_PAGINATED_SCAN": False,
     "CURSOR_PAGINATED_COLLECTIONS": False,
+    # Global timeout settings (in seconds)
+    # These will be used as defaults for all instances unless overridden
+    "socket_timeout": 5.0,  # Time to wait for socket operations
+    "socket_connect_timeout": 5.0,  # Time to wait for connection establishment
     "INSTANCES": {
         "local_redis": {
             "description": "Local Redis Instance",
             "host": "127.0.0.1",
             "port": 6379,
-            "features": { # Instance-specific features, default to globalif not found
+            "features": {  # Instance-specific features, default to globalif not found
                 "ALLOW_KEY_DELETE": True,
                 "ALLOW_KEY_EDIT": True,
                 "ALLOW_TTL_UPDATE": True,
@@ -150,38 +154,43 @@ DJ_REDIS_PANEL_SETTINGS = {
             "description": "Local Redis Instance from URL",
             "url": "redis://127.0.0.1:6379",
         },
-    }
+        "Unreachable instance": {
+            "description": "this instance should fail to connect",
+            "url": "redis://127.1.1.1:6379",
+            "socket_connect_timeout": 0.1,
+            "socket_timeout": 0.1,
+        },
+    },
 }
 
 
 # Simple Console Logging Configuration
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'simple': {
-            'format': '{asctime} [{levelname}] {name}: {message}',
-            'style': '{',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "simple": {
+            "format": "{asctime} [{levelname}] {name}: {message}",
+            "style": "{",
         },
     },
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'simple',
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
         },
     },
-    'loggers': {
+    "loggers": {
         # Django Redis Panel logging
-        'dj_redis_panel': {
-            'handlers': ['console'],
-            'level': 'DEBUG' if DEBUG else 'INFO',
-            'propagate': True,
+        "dj_redis_panel": {
+            "handlers": ["console"],
+            "level": "DEBUG" if DEBUG else "INFO",
+            "propagate": True,
         },
-        
         # Root logger
-        'root': {
-            'handlers': ['console'],
-            'level': 'WARNING',
+        "root": {
+            "handlers": ["console"],
+            "level": "WARNING",
         },
     },
 }

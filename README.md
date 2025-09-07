@@ -186,7 +186,11 @@ python manage.py createsuperuser  # If you don't have an admin user
 
 ## Configuration Options
 
-### Global Settings
+The following options are set globally but can also be configured on a per instance basis:
+Note that settings using all caps are feature flags meant to affect how dj-redis-panel operates.
+settings using lower case names are actually settings that can be passed directly into the
+underlying redis client (redis-py)
+
 
 | Setting | Default | Description |
 |---------|---------|-------------|
@@ -195,6 +199,8 @@ python manage.py createsuperuser  # If you don't have an admin user
 | `ALLOW_TTL_UPDATE` | `True` | Allow updating key TTL (expiration) |
 | `CURSOR_PAGINATED_SCAN` | `False` | Use cursor-based pagination instead of page-based |
 | `CURSOR_PAGINATED_COLLECTIONS` | `False` | Use cursor based pagination for key values like lists and hashs |
+| `socket_timeout` | 5.0 | timeout for redis opertation after established connection |
+| `socket_connect_timeout` | 3.0 | timeout for initial connection to redis instance |
 
 
 ### Instance Configuration
@@ -207,6 +213,8 @@ Each Redis instance can be configured with:
     "description": "Human-readable description",
     "host": "127.0.0.1",
     "port": 6379,
+    "socket_timeout": 1.0, # Optional: will use sane default
+    "socket_connect_timeout": 1.0, # Optional: will use sane default
     "password": "password",     # Optional
     "features": {               # Optional: override global settings
         "ALLOW_KEY_DELETE": True,
@@ -219,21 +227,13 @@ Each Redis instance can be configured with:
 "instance_name": {
     "description": "Human-readable description", 
     "url": "redis://user:password@host:port",
+    "socket_timeout": 1.0, # Optional: will use sane default
+    "socket_connect_timeout": 1.0, # Optional: will use sane default
     "features": {               # Optional: override global settings
         "CURSOR_PAGINATED_SCAN": True,
     },
 }
 ```
-
-### Feature Flags
-
-Feature flags can be set globally and overridden per instance:
-
-- **`ALLOW_KEY_DELETE`**: Controls whether the delete button is enabled
-- **`ALLOW_KEY_EDIT`**: Controls whether key values can be modified
-- **`ALLOW_TTL_UPDATE`**: Controls whether key expiration can be updated
-- **`CURSOR_PAGINATED_SCAN`**: Chooses pagination method (cursor vs. page-based)
-- **`CURSOR_PAGINATED_COLLECTIONS`**: Chooses pagination method for looking at key values
 
 ## License
 
