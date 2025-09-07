@@ -11,7 +11,7 @@ REDIS_PANEL_SETTINGS_NAME = "DJ_REDIS_PANEL_SETTINGS"
 
 # Default timeout values (in seconds)
 DEFAULT_SOCKET_TIMEOUT = 5.0  # Time to wait for socket operations
-DEFAULT_SOCKET_CONNECT_TIMEOUT = 5.0  # Time to wait for connection establishment
+DEFAULT_SOCKET_CONNECT_TIMEOUT = 3.0  # Time to wait for connection establishment
 
 
 class RedisPanelUtils:
