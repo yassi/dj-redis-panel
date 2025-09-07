@@ -214,7 +214,7 @@ Each Redis instance can be configured with:
     "host": "127.0.0.1",
     "port": 6379,
     "socket_timeout": 1.0, # Optional: will use sane default
-    "socket_connect_timeout": "1.0", # Optional: will use sane default
+    "socket_connect_timeout": 1.0, # Optional: will use sane default
     "password": "password",     # Optional
     "features": {               # Optional: override global settings
         "ALLOW_KEY_DELETE": True,
@@ -228,7 +228,7 @@ Each Redis instance can be configured with:
     "description": "Human-readable description", 
     "url": "redis://user:password@host:port",
     "socket_timeout": 1.0, # Optional: will use sane default
-    "socket_connect_timeout": "1.0", # Optional: will use sane default
+    "socket_connect_timeout": 1.0, # Optional: will use sane default
     "features": {               # Optional: override global settings
         "CURSOR_PAGINATED_SCAN": True,
     },
