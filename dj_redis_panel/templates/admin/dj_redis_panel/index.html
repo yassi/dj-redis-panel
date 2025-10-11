@@ -3,9 +3,9 @@
 
 {% block content %}
 <div class="module">
+    {% if redis_instances %}
     <h2>{% trans 'Redis Instances' %}</h2>
     <br>
-    {% if redis_instances %}
     <div class="results">
         <table id="result_list">
             <thead>
@@ -94,35 +94,33 @@
             </div>
 
             <div class="form-row">
-                <h3>{% trans 'Step 1: Configure Redis Panel Settings' %}</h3>
-                <div class="help-text">
-                    <p>{% trans 'Add the following to your Django settings.py:' %}</p>
-                </div>
+                <h3>{% trans 'Please add a configuration dictionary to your settings.py like the example below:' %}</h3>
                 <fieldset class="collapse">
                     <div class="form-row">
-                        <textarea readonly rows="15" class="vLargeTextField" style="font-family: monospace; width: 100%;">DJ_REDIS_PANEL_SETTINGS = {
+                        <textarea readonly rows="25" class="vLargeTextField" style="font-family: monospace; width: 100%;">
+DJ_REDIS_PANEL_SETTINGS = {
+    "ALLOW_KEY_DELETE": False,
+    "ALLOW_KEY_EDIT": False,
+    "ALLOW_TTL_UPDATE": False,
+    "CURSOR_PAGINATED_SCAN": False,
+    "CURSOR_PAGINATED_COLLECTIONS": False,
+    "socket_timeout": 5.0,
+    "socket_connect_timeout": 5.0,
     "INSTANCES": {
-        "default": {
-            "description": "Default Redis Cache",
+        "local_redis": {
+            "description": "Local Redis Instance",
             "host": "127.0.0.1",
             "port": 6379,
-            "db": 0,
-        },
-        "sessions": {
-            "description": "Session Storage",
-            "host": "127.0.0.1",
-            "port": 6379,
-            "db": 1,
-        },
-        "cache_db": {
-            "description": "Application Cache",  
-            "host": "127.0.0.1",
-            "port": 6379,
-            "db": 2,
-        },
-        # Add more instances as needed...
-    }
-}</textarea>
+            "features": {
+                "ALLOW_KEY_DELETE": True,
+                "ALLOW_KEY_EDIT": True,
+                "ALLOW_TTL_UPDATE": True,
+                "CURSOR_PAGINATED_SCAN": True,
+                "CURSOR_PAGINATED_COLLECTIONS": True,
+            },
+    },
+}
+</textarea>
                     </div>
                 </fieldset>
             </div>
