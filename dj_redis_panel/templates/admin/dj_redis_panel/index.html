@@ -3,9 +3,9 @@
 
 {% block content %}
 <div class="module">
+    {% if redis_instances %}
     <h2>{% trans 'Redis Instances' %}</h2>
     <br>
-    {% if redis_instances %}
     <div class="results">
         <table id="result_list">
             <thead>
@@ -16,14 +16,19 @@
                     <th scope="col">{% trans 'Memory Used' %}</th>
                     <th scope="col">{% trans 'Clients' %}</th>
                     <th scope="col">{% trans 'Total Keys' %}</th>
-                    <th scope="col">{% trans 'Actions' %}</th>
                 </tr>
             </thead>
             <tbody>
                 {% for instance in redis_instances %}
                 <tr class="{% cycle 'row1' 'row2' %}">
                     <td>
-                        <strong>{{ instance.alias }}</strong>
+                        {% if instance.status == 'connected' %}
+                        <a href="{% url 'dj_redis_panel:instance_overview' instance.alias %}">
+                            <strong>{{ instance.alias }}</strong>
+                        </a>
+                        {% else %}
+                            <strong>{{ instance.alias }}</strong>
+                        {% endif %}
                         {% if instance.config.description %}
                             <br><small class="quiet">{{ instance.config.description }}</small>
                         {% endif %}
@@ -72,15 +77,6 @@
                             <span class="quiet">—</span>
                         {% endif %}
                     </td>
-                    <td>
-                        {% if instance.status == 'connected' %}
-                            <a href="{% url 'dj_redis_panel:instance_overview' instance.alias %}" class="default">
-                                {% trans 'Browse Instance' %}
-                            </a>
-                        {% else %}
-                            <span class="quiet">{% trans 'N/A' %}</span>
-                        {% endif %}
-                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -98,35 +94,34 @@
             </div>
 
             <div class="form-row">
-                <h3>{% trans 'Step 1: Configure Redis Panel Settings' %}</h3>
-                <div class="help-text">
-                    <p>{% trans 'Add the following to your Django settings.py:' %}</p>
-                </div>
+                <h3>{% trans 'Please add a configuration dictionary to your settings.py like the example below:' %}</h3>
                 <fieldset class="collapse">
                     <div class="form-row">
-                        <textarea readonly rows="15" class="vLargeTextField" style="font-family: monospace; width: 100%;">DJ_REDIS_PANEL_SETTINGS = {
+                        <textarea readonly rows="25" class="vLargeTextField" style="font-family: monospace; width: 100%;">
+DJ_REDIS_PANEL_SETTINGS = {
+    "ALLOW_KEY_DELETE": False,
+    "ALLOW_KEY_EDIT": False,
+    "ALLOW_TTL_UPDATE": False,
+    "CURSOR_PAGINATED_SCAN": False,
+    "CURSOR_PAGINATED_COLLECTIONS": False,
+    "socket_timeout": 5.0,
+    "socket_connect_timeout": 5.0,
     "INSTANCES": {
-        "default": {
-            "description": "Default Redis Cache",
+        "local_redis": {
+            "description": "Local Redis Instance",
             "host": "127.0.0.1",
             "port": 6379,
-            "db": 0,
+            "features": {
+                "ALLOW_KEY_DELETE": True,
+                "ALLOW_KEY_EDIT": True,
+                "ALLOW_TTL_UPDATE": True,
+                "CURSOR_PAGINATED_SCAN": True,
+                "CURSOR_PAGINATED_COLLECTIONS": True,
+            },
         },
-        "sessions": {
-            "description": "Session Storage",
-            "host": "127.0.0.1",
-            "port": 6379,
-            "db": 1,
-        },
-        "cache_db": {
-            "description": "Application Cache",  
-            "host": "127.0.0.1",
-            "port": 6379,
-            "db": 2,
-        },
-        # Add more instances as needed...
     }
-}</textarea>
+}
+</textarea>
                     </div>
                 </fieldset>
             </div>

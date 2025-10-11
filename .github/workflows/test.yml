@@ -8,12 +8,14 @@ jobs:
     name: Python ${{ matrix.python-version }} - Django ${{ matrix.django-version }}
     strategy:
       matrix:
-        python-version: [3.9, 3.13]
+        python-version: [3.9, 3.14]
         django-version: [4.2, 5.2]
         exclude:
           # Django 5.0+ requires Python 3.10+
           - python-version: 3.9
             django-version: 5.2
+          - python-version: 3.14
+            django-version: 4.2
 
     services:
       redis:
