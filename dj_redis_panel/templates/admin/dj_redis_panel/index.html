@@ -16,14 +16,19 @@
                     <th scope="col">{% trans 'Memory Used' %}</th>
                     <th scope="col">{% trans 'Clients' %}</th>
                     <th scope="col">{% trans 'Total Keys' %}</th>
-                    <th scope="col">{% trans 'Actions' %}</th>
                 </tr>
             </thead>
             <tbody>
                 {% for instance in redis_instances %}
                 <tr class="{% cycle 'row1' 'row2' %}">
                     <td>
-                        <strong>{{ instance.alias }}</strong>
+                        {% if instance.status == 'connected' %}
+                        <a href="{% url 'dj_redis_panel:instance_overview' instance.alias %}">
+                            <strong>{{ instance.alias }}</strong>
+                        </a>
+                        {% else %}
+                            <strong>{{ instance.alias }}</strong>
+                        {% endif %}
                         {% if instance.config.description %}
                             <br><small class="quiet">{{ instance.config.description }}</small>
                         {% endif %}
@@ -70,15 +75,6 @@
                             {{ instance.total_keys }}
                         {% else %}
                             <span class="quiet">—</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if instance.status == 'connected' %}
-                            <a href="{% url 'dj_redis_panel:instance_overview' instance.alias %}" class="default">
-                                {% trans 'Browse Instance' %}
-                            </a>
-                        {% else %}
-                            <span class="quiet">{% trans 'N/A' %}</span>
                         {% endif %}
                     </td>
                 </tr>
