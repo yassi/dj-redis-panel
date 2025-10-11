@@ -249,6 +249,35 @@ class TestKeySearchView(RedisTestCase):
             # Cleanup pagination test keys
             for i in range(50):
                 self.redis_conn.delete(f'pagination_test:{i}')
+    
+    def test_key_search_key_name_is_clickable_link(self):
+        """Test that key names are rendered as clickable links."""
+        url = reverse('dj_redis_panel:key_search', args=['test_redis', 15])
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, 200)
+        
+        # Get the HTML content
+        content = response.content.decode('utf-8')
+        
+        # For all keys, the key name should be a clickable link
+        keys_data = response.context['keys_data']
+        self.assertGreater(len(keys_data), 0, "Should have test keys")
+        
+        for key_info in keys_data:
+            key_name = key_info['key']
+            # Check that the key detail URL is present
+            expected_url = reverse('dj_redis_panel:key_detail', args=['test_redis', 15, key_name])
+            self.assertIn(expected_url, content)
+            
+            # Check that the key name appears within a link tag
+            # The key name should be wrapped in both <a> and <strong> tags
+            self.assertIn(f'<a href="{expected_url}" class="default">', content)
+            self.assertIn(f'<strong>{key_name}</strong>', content)
+        
+        # Verify the Actions column header is removed
+        # Actions column should not be present in the table headers
+        self.assertNotIn('>Actions<', content)
 
 
 class TestGetPageRange(RedisTestCase):

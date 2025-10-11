@@ -178,3 +178,37 @@ class TestIndexView(RedisTestCase):
                 db_zero = next((db for db in databases if db['db_number'] == 0), None)
                 if db_zero:
                     self.assertTrue(db_zero['is_default'])
+    
+    def test_index_view_instance_alias_is_clickable_link(self):
+        """Test that instance alias is rendered as a clickable link for connected instances."""
+        url = reverse('dj_redis_panel:index')
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, 200)
+        
+        # Get the HTML content
+        content = response.content.decode('utf-8')
+        
+        # For connected instances, the alias should be a clickable link
+        redis_instances = response.context['redis_instances']
+        for instance in redis_instances:
+            if instance['status'] == 'connected':
+                # Check that the instance overview URL is present
+                expected_url = reverse('dj_redis_panel:instance_overview', args=[instance['alias']])
+                self.assertIn(expected_url, content)
+                
+                # Check that the alias appears within a link tag
+                link_pattern = f'<a href="{expected_url}" class="default">'
+                self.assertIn(link_pattern, content)
+            else:
+                # For disconnected instances, alias should not be a link
+                # Just verify the alias is shown as plain text
+                self.assertIn(f'<strong>{instance["alias"]}</strong>', content)
+        
+        # Verify the Actions column header is removed
+        self.assertNotIn('{% trans \'Actions\' %}', content)
+        # Verify the "Browse Instance" link text is not present in Actions column
+        # (it might still be in breadcrumbs or elsewhere, but not as a separate action)
+        # We can check that the pattern doesn't appear with the 'Browse Instance' translation
+        self.assertNotIn('<td>\n                        {% if instance.status', content)
+

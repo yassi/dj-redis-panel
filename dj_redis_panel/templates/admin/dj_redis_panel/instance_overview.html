@@ -64,14 +64,19 @@
                         <th scope="col">{% trans 'Keys' %}</th>
                         <th scope="col">{% trans 'Avg TTL (s)' %}</th>
                         <th scope="col">{% trans 'Expires' %}</th>
-                        <th scope="col">{% trans 'Actions' %}</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for db in databases %}
                     <tr class="{% cycle 'row1' 'row2' %}">
                         <td>
-                            <strong>DB {{ db.db_number }}</strong>
+                            {% if db.keys > 0 %}
+                                <a href="{% url 'dj_redis_panel:key_search' instance_alias db.db_number %}" class="default">
+                                    <strong>DB {{ db.db_number }}</strong>
+                                </a>
+                            {% else %}
+                                <strong>DB {{ db.db_number }}</strong>
+                            {% endif %}
                             {% if db.is_default %}
                                 <span class="default-badge">{% trans 'default' %}</span>
                             {% endif %}
@@ -95,15 +100,6 @@
                                 {{ db.expires|floatformat:0 }}
                             {% else %}
                                 <span class="quiet">—</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if db.keys > 0 %}
-                                <a href="{% url 'dj_redis_panel:key_search' instance_alias db.db_number %}" class="default">
-                                    {% trans 'Browse Keys' %}
-                                </a>
-                            {% else %}
-                                <span class="quiet">{% trans 'No keys' %}</span>
                             {% endif %}
                         </td>
                     </tr>

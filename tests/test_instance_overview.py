@@ -365,3 +365,33 @@ class TestInstanceOverviewView(RedisTestCase):
         
         # Should contain typical Redis memory format (e.g., "1.23M", "456K")
         self.assertTrue(any(char.isdigit() for char in memory_used))
+    
+    def test_instance_overview_db_name_is_clickable_link(self):
+        """Test that DB names are rendered as clickable links when they have keys."""
+        url = reverse('dj_redis_panel:instance_overview', args=['test_redis'])
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, 200)
+        
+        # Get the HTML content
+        content = response.content.decode('utf-8')
+        
+        # For databases with keys, the DB name should be a clickable link
+        databases = response.context['databases']
+        for db in databases:
+            if db['keys'] > 0:
+                # Check that the key search URL is present
+                expected_url = reverse('dj_redis_panel:key_search', args=['test_redis', db['db_number']])
+                self.assertIn(expected_url, content)
+                
+                # Check that the DB name appears within a link tag
+                link_pattern = f'<a href="{expected_url}" class="default">'
+                self.assertIn(link_pattern, content)
+            else:
+                # For databases without keys, DB name should not be a link
+                # Verify the DB number is shown as plain text
+                self.assertIn(f'<strong>DB {db["db_number"]}</strong>', content)
+        
+        # Verify the Actions column header is removed
+        # Actions column should not be present in the table headers
+        self.assertNotIn('>Actions<', content)

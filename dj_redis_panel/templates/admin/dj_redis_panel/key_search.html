@@ -131,14 +131,15 @@
                     <th scope="col">{% trans 'Type' %}</th>
                     <th scope="col">{% trans 'Size/Length' %}</th>
                     <th scope="col">{% trans 'TTL' %}</th>
-                    <th scope="col">{% trans 'Actions' %}</th>
                 </tr>
             </thead>
             <tbody>
                 {% for key_info in keys_data %}
                 <tr class="{% cycle 'row1' 'row2' %}">
                     <td>
-                        <strong>{{ key_info.key }}</strong>
+                        <a href="{% url 'dj_redis_panel:key_detail' instance_alias selected_db key_info.key %}" class="default">
+                            <strong>{{ key_info.key }}</strong>
+                        </a>
                     </td>
                     <td>
                         <span class="key-type key-type-{{ key_info.type }}">
@@ -158,11 +159,6 @@
                         {% else %}
                             <span class="quiet">{% trans 'No expiry' %}</span>
                         {% endif %}
-                    </td>
-                    <td>
-                        <a href="{% url 'dj_redis_panel:key_detail' instance_alias selected_db key_info.key %}" class="viewlink">
-                            {% trans 'View' %}
-                        </a>
                     </td>
                 </tr>
                 {% endfor %}
