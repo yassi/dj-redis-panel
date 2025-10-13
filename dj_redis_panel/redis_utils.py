@@ -95,14 +95,20 @@ class RedisPanelUtils:
             ),
         )
 
+        decode_responses = config.get(
+            "decode_responses", global_settings.get("decode_responses", True)
+        )
+
+        encoding = config.get("encoding", global_settings.get("encoding", "utf-8"))
+
         connection_params = {
-            "decode_responses": config.get("decode_responses", True),
             "socket_timeout": socket_timeout,
             "socket_connect_timeout": socket_connect_timeout,
+            "decode_responses": decode_responses,
         }
 
-        if config.get("encoding", None):
-            connection_params["encoding"] = config["encoding"]
+        if decode_responses and encoding:
+            connection_params["encoding"] = encoding
 
         # creating connection using URL. This has to be handled differently because the ]from_url
         # method does not support all parameters.
