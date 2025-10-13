@@ -1,7 +1,8 @@
 import redis
 import logging
+import base64
 from django.conf import settings
-from typing import Dict, Any
+from typing import Dict, Any, Union
 
 
 logger = logging.getLogger(__name__)
@@ -12,6 +13,32 @@ REDIS_PANEL_SETTINGS_NAME = "DJ_REDIS_PANEL_SETTINGS"
 # Default timeout values (in seconds)
 DEFAULT_SOCKET_TIMEOUT = 5.0  # Time to wait for socket operations
 DEFAULT_SOCKET_CONNECT_TIMEOUT = 3.0  # Time to wait for connection establishment
+
+
+def safe_decode(value: Union[bytes, str], encoding: str = 'utf-8') -> str:
+    """
+    Safely decode bytes to string. If the value cannot be decoded as UTF-8,
+    return a base64-encoded representation with a prefix.
+    
+    Args:
+        value: The value to decode (bytes or str)
+        encoding: The encoding to use (default: utf-8)
+    
+    Returns:
+        str: Decoded string or base64-encoded representation
+    """
+    if isinstance(value, str):
+        return value
+    
+    if not isinstance(value, bytes):
+        return str(value)
+    
+    try:
+        return value.decode(encoding)
+    except (UnicodeDecodeError, AttributeError):
+        # If decoding fails, return base64-encoded value with a prefix
+        encoded = base64.b64encode(value).decode('ascii')
+        return f"[binary data: base64]{encoded}"
 
 
 class RedisPanelUtils:
@@ -99,7 +126,7 @@ class RedisPanelUtils:
             "host": config.get("host", "127.0.0.1"),
             "port": config.get("port", 6379),
             "db": 0,  # Always connect to DB 0 initially, switch in UI
-            "decode_responses": True,  # Always decode for management operations
+            "decode_responses": False,  # Handle decoding manually to support binary data
             "socket_timeout": socket_timeout,
             "socket_connect_timeout": socket_connect_timeout,
         }
@@ -110,7 +137,7 @@ class RedisPanelUtils:
                 return redis.Redis.from_url(
                     config["url"],
                     ssl_cert_reqs=config.get("ssl_cert_reqs", None),
-                    decode_responses=True,
+                    decode_responses=False,
                     socket_timeout=socket_timeout,
                     socket_connect_timeout=socket_connect_timeout,
                 )
@@ -118,7 +145,7 @@ class RedisPanelUtils:
                 logger.debug("Creating Redis connection using URL with SSL disabled")
                 return redis.Redis.from_url(
                     config["url"],
-                    decode_responses=True,
+                    decode_responses=False,
                     socket_timeout=socket_timeout,
                     socket_connect_timeout=socket_connect_timeout,
                 )
@@ -228,7 +255,8 @@ class RedisPanelUtils:
                 cursor, partial_keys = redis_conn.scan(
                     cursor=cursor, match=pattern, count=scan_count
                 )
-                all_keys.extend(partial_keys)
+                # Decode keys safely
+                all_keys.extend([safe_decode(k) for k in partial_keys])
                 scan_iterations += 1
 
                 if cursor == 0:  # Scan complete
@@ -255,15 +283,16 @@ class RedisPanelUtils:
             keys_with_details = []
             for key in page_keys:
                 try:
-                    key_str = str(key)
-                    key_type = redis_conn.type(key)
+                    key_str = key  # Already decoded by safe_decode
+                    key_type = safe_decode(redis_conn.type(key))
                     ttl = redis_conn.ttl(key)
 
                     # Get size/length based on type
                     size = 0
                     if key_type == "string":
-                        value = redis_conn.get(key) or ""
-                        size = len(str(value).encode("utf-8"))
+                        value = redis_conn.get(key)
+                        if value:
+                            size = len(value) if isinstance(value, bytes) else len(str(value).encode("utf-8"))
                     elif key_type == "list":
                         size = redis_conn.llen(key)
                     elif key_type == "set":
@@ -286,7 +315,7 @@ class RedisPanelUtils:
                     continue
 
             return {
-                "keys": [str(key) for key in page_keys],
+                "keys": page_keys,  # Already decoded
                 "keys_with_details": keys_with_details,
                 "total_keys": total_keys,
                 "page": page,
@@ -350,8 +379,8 @@ class RedisPanelUtils:
                 cursor=current_cursor, match=pattern, count=scan_count
             )
 
-            # Filter keys from this scan iteration
-            page_keys = [k for k in partial_keys if k]
+            # Filter and decode keys from this scan iteration
+            page_keys = [safe_decode(k) for k in partial_keys if k]
 
             # Sort keys for consistent display
             page_keys.sort()
@@ -360,15 +389,16 @@ class RedisPanelUtils:
             keys_with_details = []
             for key in page_keys:
                 try:
-                    key_str = str(key)
-                    key_type = redis_conn.type(key)
+                    key_str = key  # Already decoded by safe_decode
+                    key_type = safe_decode(redis_conn.type(key))
                     ttl = redis_conn.ttl(key)
 
                     # Get size/length based on type
                     size = 0
                     if key_type == "string":
-                        value = redis_conn.get(key) or ""
-                        size = len(str(value).encode("utf-8"))
+                        value = redis_conn.get(key)
+                        if value:
+                            size = len(value) if isinstance(value, bytes) else len(str(value).encode("utf-8"))
                     elif key_type == "list":
                         size = redis_conn.llen(key)
                     elif key_type == "set":
@@ -410,7 +440,7 @@ class RedisPanelUtils:
                 )  # At least one page worth
 
             return {
-                "keys": [str(key) for key in page_keys],
+                "keys": page_keys,  # Already decoded
                 "keys_with_details": keys_with_details,
                 "total_keys": estimated_total,  # Not accurate for cursor-based
                 "page": 1,  # Always 1 for cursor-based (for template compatibility)
@@ -466,26 +496,37 @@ class RedisPanelUtils:
                     "error": None,
                 }
 
-            key_type = redis_conn.type(key_name)
+            key_type = safe_decode(redis_conn.type(key_name))
             ttl = redis_conn.ttl(key_name)
 
             key_value = None
             key_size = 0
 
             if key_type == "string":
-                key_value = redis_conn.get(key_name) or ""
-                key_size = len(str(key_value).encode("utf-8"))
+                raw_value = redis_conn.get(key_name)
+                if raw_value is not None:
+                    key_value = safe_decode(raw_value)
+                    key_size = len(raw_value) if isinstance(raw_value, bytes) else len(str(raw_value).encode("utf-8"))
+                else:
+                    key_value = ""
+                    key_size = 0
             elif key_type == "list":
-                key_value = redis_conn.lrange(key_name, 0, -1)
+                raw_list = redis_conn.lrange(key_name, 0, -1)
+                key_value = [safe_decode(item) for item in raw_list]
                 key_size = redis_conn.llen(key_name)
             elif key_type == "set":
-                key_value = list(redis_conn.smembers(key_name))
+                raw_set = redis_conn.smembers(key_name)
+                key_value = [safe_decode(item) for item in raw_set]
                 key_size = redis_conn.scard(key_name)
             elif key_type == "zset":
-                key_value = redis_conn.zrange(key_name, 0, -1, withscores=True)
+                raw_zset = redis_conn.zrange(key_name, 0, -1, withscores=True)
+                # zrange returns tuples of (member, score)
+                key_value = [(safe_decode(member), score) for member, score in raw_zset]
                 key_size = redis_conn.zcard(key_name)
             elif key_type == "hash":
-                key_value = redis_conn.hgetall(key_name)
+                raw_hash = redis_conn.hgetall(key_name)
+                # Decode both keys and values in the hash
+                key_value = {safe_decode(k): safe_decode(v) for k, v in raw_hash.items()}
                 key_size = redis_conn.hlen(key_name)
 
             return {
@@ -579,14 +620,19 @@ class RedisPanelUtils:
 
                 return base_response
 
-            key_type = redis_conn.type(key_name)
+            key_type = safe_decode(redis_conn.type(key_name))
             ttl = redis_conn.ttl(key_name)
 
             # Get collection size
             key_size = 0
             if key_type == "string":
-                key_value = redis_conn.get(key_name) or ""
-                key_size = len(str(key_value).encode("utf-8"))
+                raw_value = redis_conn.get(key_name)
+                if raw_value is not None:
+                    key_value = safe_decode(raw_value)
+                    key_size = len(raw_value) if isinstance(raw_value, bytes) else len(str(raw_value).encode("utf-8"))
+                else:
+                    key_value = ""
+                    key_size = 0
                 # Strings are never paginated
                 base_response = {
                     "name": key_name,
@@ -605,7 +651,7 @@ class RedisPanelUtils:
                             "cursor": cursor,
                             "next_cursor": 0,
                             "has_more": False,
-                            "showing_count": len(str(key_value)),
+                            "showing_count": len(key_value),
                         }
                     )
                 else:
@@ -671,7 +717,8 @@ class RedisPanelUtils:
                     # For lists, cursor represents the start index
                     start_index = cursor
                     end_index = start_index + per_page - 1
-                    key_value = redis_conn.lrange(key_name, start_index, end_index)
+                    raw_list = redis_conn.lrange(key_name, start_index, end_index)
+                    key_value = [safe_decode(item) for item in raw_list]
                     showing_count = len(key_value)
                     next_cursor = start_index + showing_count
                     has_more = next_cursor < key_size
@@ -681,7 +728,7 @@ class RedisPanelUtils:
                     scan_cursor, members = redis_conn.sscan(
                         key_name, cursor=cursor, count=per_page
                     )
-                    key_value = list(members)
+                    key_value = [safe_decode(item) for item in members]
                     showing_count = len(key_value)
                     next_cursor = scan_cursor
                     has_more = scan_cursor != 0
@@ -690,9 +737,11 @@ class RedisPanelUtils:
                     # For sorted sets, cursor represents the start index (already sorted by score)
                     start_index = cursor
                     end_index = start_index + per_page - 1
-                    key_value = redis_conn.zrange(
+                    raw_zset = redis_conn.zrange(
                         key_name, start_index, end_index, withscores=True
                     )
+                    # zrange returns tuples of (member, score)
+                    key_value = [(safe_decode(member), score) for member, score in raw_zset]
                     showing_count = len(key_value)
                     next_cursor = start_index + showing_count
                     has_more = next_cursor < key_size
@@ -702,7 +751,8 @@ class RedisPanelUtils:
                     scan_cursor, fields = redis_conn.hscan(
                         key_name, cursor=cursor, count=per_page
                     )
-                    key_value = fields
+                    # Decode both keys and values in the hash
+                    key_value = {safe_decode(k): safe_decode(v) for k, v in fields.items()}
                     showing_count = len(key_value)
                     next_cursor = scan_cursor
                     has_more = scan_cursor != 0
@@ -748,7 +798,8 @@ class RedisPanelUtils:
 
                 if key_type == "list":
                     # Use LRANGE for lists
-                    key_value = redis_conn.lrange(key_name, start_index, end_index)
+                    raw_list = redis_conn.lrange(key_name, start_index, end_index)
+                    key_value = [safe_decode(item) for item in raw_list]
 
                 elif key_type == "set":
                     # For sets, we need to use SSCAN for pagination
@@ -765,23 +816,27 @@ class RedisPanelUtils:
 
                     # Sort for consistent pagination
                     all_members.sort()
-                    key_value = all_members[start_index : start_index + per_page]
+                    # Decode the paginated subset
+                    key_value = [safe_decode(item) for item in all_members[start_index : start_index + per_page]]
 
                 elif key_type == "zset":
                     # Use ZRANGE for sorted sets (already ordered by score)
-                    key_value = redis_conn.zrange(
+                    raw_zset = redis_conn.zrange(
                         key_name, start_index, end_index, withscores=True
                     )
+                    # zrange returns tuples of (member, score)
+                    key_value = [(safe_decode(member), score) for member, score in raw_zset]
 
                 elif key_type == "hash":
                     # For hashes, get all fields first then paginate
-                    all_fields = redis_conn.hgetall(key_name)
+                    raw_hash = redis_conn.hgetall(key_name)
                     # Sort fields for consistent pagination
-                    sorted_fields = sorted(all_fields.items())
+                    sorted_fields = sorted(raw_hash.items())
                     paginated_fields = sorted_fields[
                         start_index : start_index + per_page
                     ]
-                    key_value = dict(paginated_fields)
+                    # Decode both keys and values
+                    key_value = {safe_decode(k): safe_decode(v) for k, v in paginated_fields}
 
                 return {
                     "name": key_name,
@@ -868,7 +923,7 @@ class RedisPanelUtils:
             redis_conn.select(db_number)
 
             # Check if key exists and is a list (or doesn't exist yet)
-            if redis_conn.exists(key_name) and redis_conn.type(key_name) != "list":
+            if redis_conn.exists(key_name) and safe_decode(redis_conn.type(key_name)) != "list":
                 return {
                     "success": False,
                     "error": f"Key '{key_name}' exists but is not a list",
@@ -910,7 +965,7 @@ class RedisPanelUtils:
             redis_conn.select(db_number)
 
             # Check if key exists and is a set (or doesn't exist yet)
-            if redis_conn.exists(key_name) and redis_conn.type(key_name) != "set":
+            if redis_conn.exists(key_name) and safe_decode(redis_conn.type(key_name)) != "set":
                 return {
                     "success": False,
                     "error": f"Key '{key_name}' exists but is not a set",
@@ -967,7 +1022,7 @@ class RedisPanelUtils:
             redis_conn.select(db_number)
 
             # Check if key exists and is a sorted set (or doesn't exist yet)
-            if redis_conn.exists(key_name) and redis_conn.type(key_name) != "zset":
+            if redis_conn.exists(key_name) and safe_decode(redis_conn.type(key_name)) != "zset":
                 return {
                     "success": False,
                     "error": f"Key '{key_name}' exists but is not a sorted set",
@@ -1019,7 +1074,7 @@ class RedisPanelUtils:
             redis_conn.select(db_number)
 
             # Check if key exists and is a hash (or doesn't exist yet)
-            if redis_conn.exists(key_name) and redis_conn.type(key_name) != "hash":
+            if redis_conn.exists(key_name) and safe_decode(redis_conn.type(key_name)) != "hash":
                 return {
                     "success": False,
                     "error": f"Key '{key_name}' exists but is not a hash",
@@ -1067,7 +1122,7 @@ class RedisPanelUtils:
             if not redis_conn.exists(key_name):
                 return {"success": False, "error": f"Key '{key_name}' does not exist"}
 
-            if redis_conn.type(key_name) != "list":
+            if safe_decode(redis_conn.type(key_name)) != "list":
                 return {"success": False, "error": f"Key '{key_name}' is not a list"}
 
             # Get list length to validate index
@@ -1117,7 +1172,7 @@ class RedisPanelUtils:
             if not redis_conn.exists(key_name):
                 return {"success": False, "error": f"Key '{key_name}' does not exist"}
 
-            if redis_conn.type(key_name) != "set":
+            if safe_decode(redis_conn.type(key_name)) != "set":
                 return {"success": False, "error": f"Key '{key_name}' is not a set"}
 
             # Remove the member from the set
@@ -1155,7 +1210,7 @@ class RedisPanelUtils:
             if not redis_conn.exists(key_name):
                 return {"success": False, "error": f"Key '{key_name}' does not exist"}
 
-            if redis_conn.type(key_name) != "zset":
+            if safe_decode(redis_conn.type(key_name)) != "zset":
                 return {
                     "success": False,
                     "error": f"Key '{key_name}' is not a sorted set",
@@ -1199,7 +1254,7 @@ class RedisPanelUtils:
             if not redis_conn.exists(key_name):
                 return {"success": False, "error": f"Key '{key_name}' does not exist"}
 
-            if redis_conn.type(key_name) != "hash":
+            if safe_decode(redis_conn.type(key_name)) != "hash":
                 return {"success": False, "error": f"Key '{key_name}' is not a hash"}
 
             # Remove the field from the hash
@@ -1242,7 +1297,7 @@ class RedisPanelUtils:
             if not redis_conn.exists(key_name):
                 return {"success": False, "error": f"Key '{key_name}' does not exist"}
 
-            if redis_conn.type(key_name) != "list":
+            if safe_decode(redis_conn.type(key_name)) != "list":
                 return {"success": False, "error": f"Key '{key_name}' is not a list"}
 
             # Get list length to validate index
@@ -1289,7 +1344,7 @@ class RedisPanelUtils:
             if not redis_conn.exists(key_name):
                 return {"success": False, "error": f"Key '{key_name}' does not exist"}
 
-            if redis_conn.type(key_name) != "hash":
+            if safe_decode(redis_conn.type(key_name)) != "hash":
                 return {"success": False, "error": f"Key '{key_name}' is not a hash"}
 
             # Check if field exists
@@ -1335,7 +1390,7 @@ class RedisPanelUtils:
             if not redis_conn.exists(key_name):
                 return {"success": False, "error": f"Key '{key_name}' does not exist"}
 
-            if redis_conn.type(key_name) != "zset":
+            if safe_decode(redis_conn.type(key_name)) != "zset":
                 return {
                     "success": False,
                     "error": f"Key '{key_name}' is not a sorted set",
