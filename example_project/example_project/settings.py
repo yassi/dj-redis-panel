@@ -155,6 +155,7 @@ DJ_REDIS_PANEL_SETTINGS = {
         "local_redis_from_url_no_features": {
             "description": "Local Redis Instance from URL",
             "url": "redis://127.0.0.1:6379",
+            "decode_responses": False,
         },
         "Unreachable instance": {
             "description": "this instance should fail to connect",

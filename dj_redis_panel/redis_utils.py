@@ -21,6 +21,31 @@ class RedisPanelUtils:
         return panel_settings
 
     @classmethod
+    def _decode_redis_key(cls, key) -> str:
+        """
+        Decode a Redis key to a string, handling both bytes and string types.
+
+        When decode_responses=False, Redis returns bytes objects that need to be
+        properly decoded to strings for use in URLs and display.
+        """
+        if isinstance(key, bytes):
+            try:
+                return key.decode("utf-8")
+            except UnicodeDecodeError:
+                # Fallback for non-UTF-8 keys - use latin-1 which can decode any byte sequence
+                return key.decode("latin-1")
+        return str(key)
+
+    @classmethod
+    def _decode_redis_type(cls, redis_type) -> str:
+        """
+        Decode a Redis type to a string, handling both bytes and string types.
+
+        When decode_responses=False, Redis returns bytes objects for types like b'string', b'list', etc.
+        """
+        return cls._decode_redis_key(redis_type)
+
+    @classmethod
     def get_instances(cls) -> Dict[str, Dict[str, Any]]:
         panel_settings = cls.get_settings()
         instances = panel_settings.get("INSTANCES", {})
@@ -263,8 +288,8 @@ class RedisPanelUtils:
             keys_with_details = []
             for key in page_keys:
                 try:
-                    key_str = str(key)
-                    key_type = redis_conn.type(key)
+                    key_str = cls._decode_redis_key(key)
+                    key_type = cls._decode_redis_type(redis_conn.type(key))
                     ttl = redis_conn.ttl(key)
 
                     # Get size/length based on type
@@ -294,7 +319,7 @@ class RedisPanelUtils:
                     continue
 
             return {
-                "keys": [str(key) for key in page_keys],
+                "keys": [cls._decode_redis_key(key) for key in page_keys],
                 "keys_with_details": keys_with_details,
                 "total_keys": total_keys,
                 "page": page,
@@ -368,8 +393,8 @@ class RedisPanelUtils:
             keys_with_details = []
             for key in page_keys:
                 try:
-                    key_str = str(key)
-                    key_type = redis_conn.type(key)
+                    key_str = cls._decode_redis_key(key)
+                    key_type = cls._decode_redis_type(redis_conn.type(key))
                     ttl = redis_conn.ttl(key)
 
                     # Get size/length based on type
@@ -418,7 +443,7 @@ class RedisPanelUtils:
                 )  # At least one page worth
 
             return {
-                "keys": [str(key) for key in page_keys],
+                "keys": [cls._decode_redis_key(key) for key in page_keys],
                 "keys_with_details": keys_with_details,
                 "total_keys": estimated_total,  # Not accurate for cursor-based
                 "page": 1,  # Always 1 for cursor-based (for template compatibility)
@@ -474,7 +499,7 @@ class RedisPanelUtils:
                     "error": None,
                 }
 
-            key_type = redis_conn.type(key_name)
+            key_type = cls._decode_redis_type(redis_conn.type(key_name))
             ttl = redis_conn.ttl(key_name)
 
             key_value = None
@@ -587,7 +612,7 @@ class RedisPanelUtils:
 
                 return base_response
 
-            key_type = redis_conn.type(key_name)
+            key_type = cls._decode_redis_type(redis_conn.type(key_name))
             ttl = redis_conn.ttl(key_name)
 
             # Get collection size
@@ -876,7 +901,10 @@ class RedisPanelUtils:
             redis_conn.select(db_number)
 
             # Check if key exists and is a list (or doesn't exist yet)
-            if redis_conn.exists(key_name) and redis_conn.type(key_name) != "list":
+            if (
+                redis_conn.exists(key_name)
+                and cls._decode_redis_type(redis_conn.type(key_name)) != "list"
+            ):
                 return {
                     "success": False,
                     "error": f"Key '{key_name}' exists but is not a list",
@@ -918,7 +946,10 @@ class RedisPanelUtils:
             redis_conn.select(db_number)
 
             # Check if key exists and is a set (or doesn't exist yet)
-            if redis_conn.exists(key_name) and redis_conn.type(key_name) != "set":
+            if (
+                redis_conn.exists(key_name)
+                and cls._decode_redis_type(redis_conn.type(key_name)) != "set"
+            ):
                 return {
                     "success": False,
                     "error": f"Key '{key_name}' exists but is not a set",
@@ -975,7 +1006,10 @@ class RedisPanelUtils:
             redis_conn.select(db_number)
 
             # Check if key exists and is a sorted set (or doesn't exist yet)
-            if redis_conn.exists(key_name) and redis_conn.type(key_name) != "zset":
+            if (
+                redis_conn.exists(key_name)
+                and cls._decode_redis_type(redis_conn.type(key_name)) != "zset"
+            ):
                 return {
                     "success": False,
                     "error": f"Key '{key_name}' exists but is not a sorted set",
@@ -1027,7 +1061,10 @@ class RedisPanelUtils:
             redis_conn.select(db_number)
 
             # Check if key exists and is a hash (or doesn't exist yet)
-            if redis_conn.exists(key_name) and redis_conn.type(key_name) != "hash":
+            if (
+                redis_conn.exists(key_name)
+                and cls._decode_redis_type(redis_conn.type(key_name)) != "hash"
+            ):
                 return {
                     "success": False,
                     "error": f"Key '{key_name}' exists but is not a hash",
@@ -1075,7 +1112,7 @@ class RedisPanelUtils:
             if not redis_conn.exists(key_name):
                 return {"success": False, "error": f"Key '{key_name}' does not exist"}
 
-            if redis_conn.type(key_name) != "list":
+            if cls._decode_redis_type(redis_conn.type(key_name)) != "list":
                 return {"success": False, "error": f"Key '{key_name}' is not a list"}
 
             # Get list length to validate index
@@ -1125,7 +1162,7 @@ class RedisPanelUtils:
             if not redis_conn.exists(key_name):
                 return {"success": False, "error": f"Key '{key_name}' does not exist"}
 
-            if redis_conn.type(key_name) != "set":
+            if cls._decode_redis_type(redis_conn.type(key_name)) != "set":
                 return {"success": False, "error": f"Key '{key_name}' is not a set"}
 
             # Remove the member from the set
@@ -1163,7 +1200,7 @@ class RedisPanelUtils:
             if not redis_conn.exists(key_name):
                 return {"success": False, "error": f"Key '{key_name}' does not exist"}
 
-            if redis_conn.type(key_name) != "zset":
+            if cls._decode_redis_type(redis_conn.type(key_name)) != "zset":
                 return {
                     "success": False,
                     "error": f"Key '{key_name}' is not a sorted set",
@@ -1207,7 +1244,7 @@ class RedisPanelUtils:
             if not redis_conn.exists(key_name):
                 return {"success": False, "error": f"Key '{key_name}' does not exist"}
 
-            if redis_conn.type(key_name) != "hash":
+            if cls._decode_redis_type(redis_conn.type(key_name)) != "hash":
                 return {"success": False, "error": f"Key '{key_name}' is not a hash"}
 
             # Remove the field from the hash
@@ -1250,7 +1287,7 @@ class RedisPanelUtils:
             if not redis_conn.exists(key_name):
                 return {"success": False, "error": f"Key '{key_name}' does not exist"}
 
-            if redis_conn.type(key_name) != "list":
+            if cls._decode_redis_type(redis_conn.type(key_name)) != "list":
                 return {"success": False, "error": f"Key '{key_name}' is not a list"}
 
             # Get list length to validate index
@@ -1297,7 +1334,7 @@ class RedisPanelUtils:
             if not redis_conn.exists(key_name):
                 return {"success": False, "error": f"Key '{key_name}' does not exist"}
 
-            if redis_conn.type(key_name) != "hash":
+            if cls._decode_redis_type(redis_conn.type(key_name)) != "hash":
                 return {"success": False, "error": f"Key '{key_name}' is not a hash"}
 
             # Check if field exists
@@ -1343,7 +1380,7 @@ class RedisPanelUtils:
             if not redis_conn.exists(key_name):
                 return {"success": False, "error": f"Key '{key_name}' does not exist"}
 
-            if redis_conn.type(key_name) != "zset":
+            if cls._decode_redis_type(redis_conn.type(key_name)) != "zset":
                 return {
                     "success": False,
                     "error": f"Key '{key_name}' is not a sorted set",
