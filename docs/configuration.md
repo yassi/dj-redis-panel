@@ -35,6 +35,8 @@ These settings apply to all Redis instances unless overridden at the instance le
 | `CURSOR_PAGINATED_COLLECTIONS` | `False` | Use cursor-based pagination for key values like lists and hashes |
 | `socket_timeout` | `5.0` | Socket timeout in seconds for Redis operations |
 | `socket_connect_timeout` | `3.0` | Connection timeout in seconds for establishing Redis connections |
+| `decode_responses` | True | Redis client settings to decode reponses based on chosen encoding |
+| `encoding` | `utf-8` | Set encoding used for the decode_responses setting | 
 
 ### Feature Flags Details
 

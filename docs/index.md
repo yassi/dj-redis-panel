@@ -35,6 +35,9 @@ Django Redis Panel seamlessly integrates into your existing Django admin interfa
 - Redis 4.0+
 - redis-py 4.0+
 
+Note: some combinations of versions of python and django are not supported. Wherever these
+combinations are not supported, dj-redis-panel is also not supported.
+
 ## License
 
 This project is licensed under the MIT License.

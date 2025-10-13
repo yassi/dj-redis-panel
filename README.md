@@ -201,6 +201,8 @@ underlying redis client (redis-py)
 | `CURSOR_PAGINATED_COLLECTIONS` | `False` | Use cursor based pagination for key values like lists and hashs |
 | `socket_timeout` | 5.0 | timeout for redis opertation after established connection |
 | `socket_connect_timeout` | 3.0 | timeout for initial connection to redis instance |
+| `decode_responses` | True | Redis client settings to decode reponses based on chosen encoding |
+| `encoding` | `utf-8` | Set encoding used for the decode_responses setting | 
 
 
 ### Instance Configuration

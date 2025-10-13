@@ -76,5 +76,6 @@ jobs:
       - pypi-publish
     steps:
       - name: Publish documentation to GitHub Pages using MkDocs
+        working-directory: /
         run: |
           make docs_push
