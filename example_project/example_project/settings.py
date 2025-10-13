@@ -137,6 +137,8 @@ DJ_REDIS_PANEL_SETTINGS = {
     # These will be used as defaults for all instances unless overridden
     "socket_timeout": 5.0,  # Time to wait for socket operations
     "socket_connect_timeout": 5.0,  # Time to wait for connection establishment
+    "decode_responses": True,  # decode responses from redis into utf-8 strings
+    "encoding": "utf-8",  # optional encoding for keys and values, defaults to utf-8 if not set.
     "INSTANCES": {
         "local_redis": {
             "description": "Local Redis Instance",
