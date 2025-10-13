@@ -19,6 +19,7 @@ A Django Admin panel for browsing, inspecting, and managing Redis keys. No postg
 - **Browse Redis Keys**: Search and filter Redis keys with pattern matching
 - **Instance Overview**: Monitor Redis instance metrics and database statistics  
 - **Key Management**: View, edit, and delete Redis keys with support for all data types
+- **Binary Data Support**: Safely handles non-UTF-8 binary data (e.g., msgpack from Django Channels)
 - **Feature Toggles**: Granular control over operations (delete, edit, TTL updates)
 - **Pagination**: Both traditional page-based and cursor-based pagination support
 - **Django Admin Integration**: Seamless integration with Django admin styling and dark mode
@@ -27,7 +28,7 @@ A Django Admin panel for browsing, inspecting, and managing Redis keys. No postg
 
 ## Supported Redis Data Types
 
-- **String**: View and edit string values
+- **String**: View and edit string values (including binary data displayed as base64)
 - **List**: Browse list items with pagination
 - **Set**: View set members
 - **Hash**: Display hash fields and values in a table format
@@ -201,6 +202,24 @@ underlying redis client (redis-py)
 | `CURSOR_PAGINATED_COLLECTIONS` | `False` | Use cursor based pagination for key values like lists and hashs |
 | `socket_timeout` | 5.0 | timeout for redis opertation after established connection |
 | `socket_connect_timeout` | 3.0 | timeout for initial connection to redis instance |
+
+### Handling Binary Data
+
+dj-redis-panel can safely handle binary data that cannot be decoded as UTF-8, such as msgpack-encoded data from Django Channels. When binary data is encountered:
+
+- It is automatically detected during retrieval
+- Displayed as base64-encoded text with a `[binary data: base64]` prefix
+- This prevents decode errors while still allowing you to inspect the data
+
+**Example**: If Django Channels stores a msgpack-encoded message like:
+```
+b'\x83\xa4type\xafgeneral_message\xa4html\xb2<p>Hello World</p>'
+```
+
+It will be displayed in the panel as:
+```
+[binary data: base64]g6R0eXBlr2dlbmVyYWxfbWVzc2FnZaRodG1s...
+```
 
 
 ### Instance Configuration
