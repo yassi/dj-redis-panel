@@ -96,32 +96,34 @@ class RedisPanelUtils:
         )
 
         connection_params = {
-            "host": config.get("host", "127.0.0.1"),
-            "port": config.get("port", 6379),
-            "db": 0,  # Always connect to DB 0 initially, switch in UI
-            "decode_responses": True,  # Always decode for management operations
+            "decode_responses": config.get("decode_responses", True),
             "socket_timeout": socket_timeout,
             "socket_connect_timeout": socket_connect_timeout,
         }
 
+        if config.get("encoding", None):
+            connection_params["encoding"] = config["encoding"]
+
+        # creating connection using URL. This has to be handled differently because the ]from_url
+        # method does not support all parameters.
         if "url" in config:
             if config["url"].startswith("rediss://"):
                 logger.debug("Creating Redis connection using URL with SSL enabled")
-                return redis.Redis.from_url(
-                    config["url"],
-                    ssl_cert_reqs=config.get("ssl_cert_reqs", None),
-                    decode_responses=True,
-                    socket_timeout=socket_timeout,
-                    socket_connect_timeout=socket_connect_timeout,
-                )
+                connection_params["ssl_cert_reqs"] = config.get("ssl_cert_reqs", None)
             else:
                 logger.debug("Creating Redis connection using URL with SSL disabled")
-                return redis.Redis.from_url(
-                    config["url"],
-                    decode_responses=True,
-                    socket_timeout=socket_timeout,
-                    socket_connect_timeout=socket_connect_timeout,
-                )
+            return redis.Redis.from_url(
+                config["url"],
+                **connection_params,
+            )
+
+        # creating connection using explit host, port, etc. options
+        connection_params = {
+            "host": config.get("host", "127.0.0.1"),
+            "port": config.get("port", 6379),
+            "db": 0,
+            **connection_params,
+        }
 
         # Optional connection parameters
         if "password" in config:
