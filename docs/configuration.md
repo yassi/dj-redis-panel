@@ -138,8 +138,7 @@ Controls how Redis values are decoded from bytes to strings. When Redis returns 
 - **International Data**: When data might be encoded in various character sets
 
 !!! warning "Binary Data Handling"
-    When the decoder encounters binary data that can't be decoded with any encoding in the pipeline, it displays the data as a raw byte string representation (e.g., `\x80\x04\x95...`). This prevents UTF-8 decoding errors while still allowing you to see the data even if it
-    contains several escape characters.
+    When the decoder encounters binary data that can't be decoded with any encoding in the pipeline, it displays the data as a bytes literal representation (e.g., `b'\x80\x04\x95...'`). This clearly indicates binary data and prevents UTF-8 decoding errors while still allowing you to see and manage the data.
 
 ## Instance Configuration
 
@@ -334,7 +333,7 @@ DJ_REDIS_PANEL_SETTINGS = {
 !!! tip "Binary Data Best Practices"
     - Set `ALLOW_KEY_EDIT: False` for instances with binary data to prevent corruption
     - Use `["utf-8", "latin-1"]` as a safe decoder pipeline for mixed data
-    - Binary data will be displayed as escaped byte strings (e.g., `\x80\x04\x95...`)
+    - Binary data will be displayed as bytes literals (e.g., `b'\x80\x04\x95...'`) for clear identification
     - You can still view, search, and manage keys - just not edit their values directly
 
 ## Environment-Specific Configuration

@@ -34,9 +34,9 @@ class RedisValueDecoder:
                 except (UnicodeDecodeError, LookupError):
                     continue
 
-            # If all encodings fail, return raw byte string representation
-            # Using repr() to get a readable string representation of the bytes
-            return repr(value)[2:-1]  # Remove b' and ' from repr output
+            # If all encodings fail, return raw byte string representation with b'' prefix
+            # This clearly indicates to the user that this is binary data
+            return repr(value)  # Keep the full b'...' representation
 
         # For other types, convert to string
         return str(value)
@@ -65,3 +65,47 @@ class RedisValueDecoder:
         Decode a list of (member, score) tuples from a sorted set.
         """
         return [(self.decode_value(member), score) for member, score in values]
+
+    def encode_for_redis(self, value: str) -> Union[str, bytes]:
+        """
+        Convert a decoded string back to the format expected by Redis.
+
+        This handles the case where binary data was decoded to a string representation
+        (like b'\\x80\\x04\\x95...') and needs to be converted back to bytes for Redis operations.
+
+        Args:
+            value: The decoded string value from the UI
+
+        Returns:
+            Either the original string (if it's valid UTF-8) or bytes (if it's a binary representation)
+        """
+        if not isinstance(value, str):
+            return value
+
+        # Check if this looks like a bytes literal representation (starts with b' and ends with ')
+        if value.startswith("b'") and value.endswith("'"):
+            try:
+                # Use ast.literal_eval to safely parse the bytes literal
+                import ast
+
+                return ast.literal_eval(value)
+            except (ValueError, SyntaxError):
+                # If parsing fails, try manual parsing for simple cases
+                try:
+                    # Remove b' and ' wrapper and decode escape sequences
+                    inner_value = value[2:-1]
+                    return (
+                        bytes(inner_value, "utf-8")
+                        .decode("unicode_escape")
+                        .encode("latin1")
+                    )
+                except (UnicodeDecodeError, UnicodeEncodeError):
+                    # If conversion fails, return as-is
+                    return value
+
+        # For regular strings, try to encode with the first encoding in the pipeline
+        try:
+            return value.encode(self.encoding_pipeline[0])
+        except (UnicodeEncodeError, LookupError):
+            # If encoding fails, return as string
+            return value

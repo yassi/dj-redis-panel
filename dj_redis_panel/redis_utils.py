@@ -895,19 +895,26 @@ class RedisPanelUtils:
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
             redis_conn.select(db_number)
+            decoder = cls.get_decoder()
 
             # Check if key exists and is a list (or doesn't exist yet)
-            if redis_conn.exists(key_name) and redis_conn.type(key_name) != "list":
+            if (
+                redis_conn.exists(key_name)
+                and decoder.decode_value(redis_conn.type(key_name)) != "list"
+            ):
                 return {
                     "success": False,
                     "error": f"Key '{key_name}' exists but is not a list",
                 }
 
+            # Convert the value to the format expected by Redis
+            redis_value = decoder.encode_for_redis(value)
+
             # Add the item to the list
             if position == "start":
-                redis_conn.lpush(key_name, value)
+                redis_conn.lpush(key_name, redis_value)
             else:  # default to "end"
-                redis_conn.rpush(key_name, value)
+                redis_conn.rpush(key_name, redis_value)
 
             return {"success": True, "error": None}
 
@@ -937,16 +944,23 @@ class RedisPanelUtils:
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
             redis_conn.select(db_number)
+            decoder = cls.get_decoder()
 
             # Check if key exists and is a set (or doesn't exist yet)
-            if redis_conn.exists(key_name) and redis_conn.type(key_name) != "set":
+            if (
+                redis_conn.exists(key_name)
+                and decoder.decode_value(redis_conn.type(key_name)) != "set"
+            ):
                 return {
                     "success": False,
                     "error": f"Key '{key_name}' exists but is not a set",
                 }
 
+            # Convert the member to the format expected by Redis
+            redis_member = decoder.encode_for_redis(member)
+
             # Add the member to the set
-            result = redis_conn.sadd(key_name, member)
+            result = redis_conn.sadd(key_name, redis_member)
 
             # result is 1 if member was added, 0 if it already existed
             if result == 0:
@@ -994,16 +1008,23 @@ class RedisPanelUtils:
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
             redis_conn.select(db_number)
+            decoder = cls.get_decoder()
 
             # Check if key exists and is a sorted set (or doesn't exist yet)
-            if redis_conn.exists(key_name) and redis_conn.type(key_name) != "zset":
+            if (
+                redis_conn.exists(key_name)
+                and decoder.decode_value(redis_conn.type(key_name)) != "zset"
+            ):
                 return {
                     "success": False,
                     "error": f"Key '{key_name}' exists but is not a sorted set",
                 }
 
+            # Convert the member to the format expected by Redis
+            redis_member = decoder.encode_for_redis(member)
+
             # Add the member to the sorted set
-            result = redis_conn.zadd(key_name, {member: score})
+            result = redis_conn.zadd(key_name, {redis_member: score})
 
             # result is 1 if member was added, 0 if score was updated
             if result == 0:
@@ -1046,16 +1067,24 @@ class RedisPanelUtils:
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
             redis_conn.select(db_number)
+            decoder = cls.get_decoder()
 
             # Check if key exists and is a hash (or doesn't exist yet)
-            if redis_conn.exists(key_name) and redis_conn.type(key_name) != "hash":
+            if (
+                redis_conn.exists(key_name)
+                and decoder.decode_value(redis_conn.type(key_name)) != "hash"
+            ):
                 return {
                     "success": False,
                     "error": f"Key '{key_name}' exists but is not a hash",
                 }
 
+            # Convert field and value to the format expected by Redis
+            redis_field = decoder.encode_for_redis(field)
+            redis_value = decoder.encode_for_redis(value)
+
             # Add the field to the hash
-            result = redis_conn.hset(key_name, field, value)
+            result = redis_conn.hset(key_name, redis_field, redis_value)
 
             # result is 1 if field was added, 0 if it was updated
             if result == 0:
@@ -1091,12 +1120,13 @@ class RedisPanelUtils:
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
             redis_conn.select(db_number)
+            decoder = cls.get_decoder()
 
             # Check if key exists and is a list
             if not redis_conn.exists(key_name):
                 return {"success": False, "error": f"Key '{key_name}' does not exist"}
 
-            if redis_conn.type(key_name) != "list":
+            if decoder.decode_value(redis_conn.type(key_name)) != "list":
                 return {"success": False, "error": f"Key '{key_name}' is not a list"}
 
             # Get list length to validate index
@@ -1141,16 +1171,20 @@ class RedisPanelUtils:
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
             redis_conn.select(db_number)
+            decoder = cls.get_decoder()
 
             # Check if key exists and is a set
             if not redis_conn.exists(key_name):
                 return {"success": False, "error": f"Key '{key_name}' does not exist"}
 
-            if redis_conn.type(key_name) != "set":
+            if decoder.decode_value(redis_conn.type(key_name)) != "set":
                 return {"success": False, "error": f"Key '{key_name}' is not a set"}
 
+            # Convert the member back to the format expected by Redis
+            redis_member = decoder.encode_for_redis(member)
+
             # Remove the member from the set
-            result = redis_conn.srem(key_name, member)
+            result = redis_conn.srem(key_name, redis_member)
 
             # result is 1 if member was removed, 0 if it didn't exist
             if result == 0:
@@ -1179,19 +1213,23 @@ class RedisPanelUtils:
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
             redis_conn.select(db_number)
+            decoder = cls.get_decoder()
 
             # Check if key exists and is a sorted set
             if not redis_conn.exists(key_name):
                 return {"success": False, "error": f"Key '{key_name}' does not exist"}
 
-            if redis_conn.type(key_name) != "zset":
+            if decoder.decode_value(redis_conn.type(key_name)) != "zset":
                 return {
                     "success": False,
                     "error": f"Key '{key_name}' is not a sorted set",
                 }
 
+            # Convert the member back to the format expected by Redis
+            redis_member = decoder.encode_for_redis(member)
+
             # Remove the member from the sorted set
-            result = redis_conn.zrem(key_name, member)
+            result = redis_conn.zrem(key_name, redis_member)
 
             # result is 1 if member was removed, 0 if it didn't exist
             if result == 0:
@@ -1223,16 +1261,20 @@ class RedisPanelUtils:
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
             redis_conn.select(db_number)
+            decoder = cls.get_decoder()
 
             # Check if key exists and is a hash
             if not redis_conn.exists(key_name):
                 return {"success": False, "error": f"Key '{key_name}' does not exist"}
 
-            if redis_conn.type(key_name) != "hash":
+            if decoder.decode_value(redis_conn.type(key_name)) != "hash":
                 return {"success": False, "error": f"Key '{key_name}' is not a hash"}
 
+            # Convert the field back to the format expected by Redis
+            redis_field = decoder.encode_for_redis(field)
+
             # Remove the field from the hash
-            result = redis_conn.hdel(key_name, field)
+            result = redis_conn.hdel(key_name, redis_field)
 
             # result is 1 if field was removed, 0 if it didn't exist
             if result == 0:
@@ -1266,12 +1308,13 @@ class RedisPanelUtils:
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
             redis_conn.select(db_number)
+            decoder = cls.get_decoder()
 
             # Check if key exists and is a list
             if not redis_conn.exists(key_name):
                 return {"success": False, "error": f"Key '{key_name}' does not exist"}
 
-            if redis_conn.type(key_name) != "list":
+            if decoder.decode_value(redis_conn.type(key_name)) != "list":
                 return {"success": False, "error": f"Key '{key_name}' is not a list"}
 
             # Get list length to validate index
@@ -1282,8 +1325,11 @@ class RedisPanelUtils:
                     "error": f"Index {index} is out of range (list length: {list_length})",
                 }
 
+            # Convert the new value to the format expected by Redis
+            redis_new_value = decoder.encode_for_redis(new_value)
+
             # Update the item at the specified index
-            redis_conn.lset(key_name, index, new_value)
+            redis_conn.lset(key_name, index, redis_new_value)
 
             return {
                 "success": True,
@@ -1313,23 +1359,30 @@ class RedisPanelUtils:
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
             redis_conn.select(db_number)
+            decoder = cls.get_decoder()
 
             # Check if key exists and is a hash
             if not redis_conn.exists(key_name):
                 return {"success": False, "error": f"Key '{key_name}' does not exist"}
 
-            if redis_conn.type(key_name) != "hash":
+            if decoder.decode_value(redis_conn.type(key_name)) != "hash":
                 return {"success": False, "error": f"Key '{key_name}' is not a hash"}
 
+            # Convert the field to the format expected by Redis
+            redis_field = decoder.encode_for_redis(field)
+
             # Check if field exists
-            if not redis_conn.hexists(key_name, field):
+            if not redis_conn.hexists(key_name, redis_field):
                 return {
                     "success": False,
                     "error": f"Field '{field}' does not exist in hash",
                 }
 
+            # Convert the new value to the format expected by Redis
+            redis_new_value = decoder.encode_for_redis(new_value)
+
             # Update the field value
-            redis_conn.hset(key_name, field, new_value)
+            redis_conn.hset(key_name, redis_field, redis_new_value)
 
             return {
                 "success": True,
@@ -1359,26 +1412,30 @@ class RedisPanelUtils:
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
             redis_conn.select(db_number)
+            decoder = cls.get_decoder()
 
             # Check if key exists and is a sorted set
             if not redis_conn.exists(key_name):
                 return {"success": False, "error": f"Key '{key_name}' does not exist"}
 
-            if redis_conn.type(key_name) != "zset":
+            if decoder.decode_value(redis_conn.type(key_name)) != "zset":
                 return {
                     "success": False,
                     "error": f"Key '{key_name}' is not a sorted set",
                 }
 
+            # Convert the member to the format expected by Redis
+            redis_member = decoder.encode_for_redis(member)
+
             # Check if member exists
-            if redis_conn.zscore(key_name, member) is None:
+            if redis_conn.zscore(key_name, redis_member) is None:
                 return {
                     "success": False,
                     "error": f"Member '{member}' does not exist in sorted set",
                 }
 
             # Update the member's score
-            redis_conn.zadd(key_name, {member: new_score})
+            redis_conn.zadd(key_name, {redis_member: new_score})
 
             return {
                 "success": True,
