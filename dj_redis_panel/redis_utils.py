@@ -22,12 +22,22 @@ class RedisPanelUtils:
         return panel_settings
 
     @classmethod
-    def get_decoder(cls) -> RedisValueDecoder:
+    def get_decoder(cls, instance_alias: str = None) -> RedisValueDecoder:
         """
         Get a RedisValueDecoder instance configured with the encoder from settings.
         """
         panel_settings = cls.get_settings()
+
+        # Default to global encoder setting
         encoder = panel_settings.get("encoder", "utf-8")
+
+        # Check for instance-specific encoder override
+        if instance_alias:
+            instances = cls.get_instances()
+            if instance_alias in instances:
+                instance_config = instances[instance_alias]
+                encoder = instance_config.get("encoder", encoder)
+
         return RedisValueDecoder(encoder)
 
     @classmethod
@@ -227,7 +237,7 @@ class RedisPanelUtils:
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
             redis_conn.select(db_number)
-            decoder = cls.get_decoder()
+            decoder = cls.get_decoder(instance_alias)
 
             # Scan all matching keys
             cursor = 0
@@ -347,7 +357,7 @@ class RedisPanelUtils:
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
             redis_conn.select(db_number)
-            decoder = cls.get_decoder()
+            decoder = cls.get_decoder(instance_alias)
 
             # Use the provided cursor directly - no approximation needed
             current_cursor = cursor
@@ -466,7 +476,7 @@ class RedisPanelUtils:
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
             redis_conn.select(db_number)
-            decoder = cls.get_decoder()
+            decoder = cls.get_decoder(instance_alias)
 
             if not redis_conn.exists(key_name):
                 return {
@@ -562,7 +572,7 @@ class RedisPanelUtils:
 
             redis_conn = cls.get_redis_connection(instance_alias)
             redis_conn.select(db_number)
-            decoder = cls.get_decoder()
+            decoder = cls.get_decoder(instance_alias)
 
             # Handle non-existent key
             if not redis_conn.exists(key_name):
@@ -892,7 +902,7 @@ class RedisPanelUtils:
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
             redis_conn.select(db_number)
-            decoder = cls.get_decoder()
+            decoder = cls.get_decoder(instance_alias)
 
             # Check if key exists and is a list (or doesn't exist yet)
             if (
@@ -941,7 +951,7 @@ class RedisPanelUtils:
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
             redis_conn.select(db_number)
-            decoder = cls.get_decoder()
+            decoder = cls.get_decoder(instance_alias)
 
             # Check if key exists and is a set (or doesn't exist yet)
             if (
@@ -1005,7 +1015,7 @@ class RedisPanelUtils:
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
             redis_conn.select(db_number)
-            decoder = cls.get_decoder()
+            decoder = cls.get_decoder(instance_alias)
 
             # Check if key exists and is a sorted set (or doesn't exist yet)
             if (
@@ -1064,7 +1074,7 @@ class RedisPanelUtils:
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
             redis_conn.select(db_number)
-            decoder = cls.get_decoder()
+            decoder = cls.get_decoder(instance_alias)
 
             # Check if key exists and is a hash (or doesn't exist yet)
             if (
@@ -1117,7 +1127,7 @@ class RedisPanelUtils:
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
             redis_conn.select(db_number)
-            decoder = cls.get_decoder()
+            decoder = cls.get_decoder(instance_alias)
 
             # Check if key exists and is a list
             if not redis_conn.exists(key_name):
@@ -1168,7 +1178,7 @@ class RedisPanelUtils:
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
             redis_conn.select(db_number)
-            decoder = cls.get_decoder()
+            decoder = cls.get_decoder(instance_alias)
 
             # Check if key exists and is a set
             if not redis_conn.exists(key_name):
@@ -1210,7 +1220,7 @@ class RedisPanelUtils:
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
             redis_conn.select(db_number)
-            decoder = cls.get_decoder()
+            decoder = cls.get_decoder(instance_alias)
 
             # Check if key exists and is a sorted set
             if not redis_conn.exists(key_name):
@@ -1258,7 +1268,7 @@ class RedisPanelUtils:
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
             redis_conn.select(db_number)
-            decoder = cls.get_decoder()
+            decoder = cls.get_decoder(instance_alias)
 
             # Check if key exists and is a hash
             if not redis_conn.exists(key_name):
@@ -1305,7 +1315,7 @@ class RedisPanelUtils:
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
             redis_conn.select(db_number)
-            decoder = cls.get_decoder()
+            decoder = cls.get_decoder(instance_alias)
 
             # Check if key exists and is a list
             if not redis_conn.exists(key_name):
@@ -1356,7 +1366,7 @@ class RedisPanelUtils:
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
             redis_conn.select(db_number)
-            decoder = cls.get_decoder()
+            decoder = cls.get_decoder(instance_alias)
 
             # Check if key exists and is a hash
             if not redis_conn.exists(key_name):
@@ -1409,7 +1419,7 @@ class RedisPanelUtils:
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
             redis_conn.select(db_number)
-            decoder = cls.get_decoder()
+            decoder = cls.get_decoder(instance_alias)
 
             # Check if key exists and is a sorted set
             if not redis_conn.exists(key_name):

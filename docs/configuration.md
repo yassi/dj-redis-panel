@@ -167,7 +167,7 @@ Each Redis instance is configured under the `INSTANCES` key. You can define mult
 
 ### Per-Instance Feature Overrides
 
-You can override global feature flags and timeout settings for individual instances:
+You can override global feature flags, timeout settings, and encoder for individual instances:
 
 ```python
 "instance_name": {
@@ -178,7 +178,8 @@ You can override global feature flags and timeout settings for individual instan
         "ALLOW_KEY_DELETE": False,      # Override global setting
         "CURSOR_PAGINATED_SCAN": True,  # Use cursor pagination for this instance
     },
-    # Instance-specific timeout overrides
+    # Instance-specific overrides
+    "encoder": "latin-1",           # Use different encoding for this instance
     "socket_timeout": 10.0,         # Allow longer operations for this instance
     "socket_connect_timeout": 5.0,  # Allow more time to connect to remote server
 }

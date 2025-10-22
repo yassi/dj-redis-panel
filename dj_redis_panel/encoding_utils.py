@@ -14,8 +14,10 @@ class RedisValueDecoder:
         Args:
             encoder: Primary encoding to use (defaults to 'utf-8')
         """
-        # Internally maintain a pipeline for flexibility, but expose simple encoder setting
         self.encoder = encoder
+
+        # establish a pipeline for encoding so we can try different decoding approaches.
+        # this can be expanded later to include more complex formats like msgpack or pickle if needed.
         self.encoding_pipeline = [encoder]
 
     def decode_value(self, value: Union[bytes, str, None]) -> Union[str, None]:
@@ -109,7 +111,7 @@ class RedisValueDecoder:
 
         # For regular strings, try to encode with the first encoding in the pipeline
         try:
-            return value.encode(self.encoding_pipeline[0])
+            return value.encode(self.encoder)
         except (UnicodeEncodeError, LookupError):
             # If encoding fails, return as string
             return value
