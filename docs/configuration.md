@@ -33,7 +33,7 @@ These settings apply to all Redis instances unless overridden at the instance le
 | `ALLOW_TTL_UPDATE` | `False` | Allow updating key TTL (expiration) |
 | `CURSOR_PAGINATED_SCAN` | `False` | Use cursor-based pagination instead of page-based |
 | `CURSOR_PAGINATED_COLLECTIONS` | `False` | Use cursor-based pagination for key values like lists and hashes |
-| `DECODER_PIPELINE` | `["utf-8"]` | List of encodings to try when decoding Redis values |
+| `encoder` | `"utf-8"` | Encoding to use for decoding/encoding Redis values |
 | `socket_timeout` | `5.0` | Socket timeout in seconds for Redis operations |
 | `socket_connect_timeout` | `3.0` | Connection timeout in seconds for establishing Redis connections |
 
@@ -110,32 +110,22 @@ Controls how long to wait when establishing a connection to Redis.
 !!! info "Connection Timeout"
     This timeout applies only to the initial connection establishment. Once connected, `socket_timeout` governs individual operations.
 
-#### `DECODER_PIPELINE`
+#### `ENCODER`
 
-Controls how Redis values are decoded from bytes to strings. When Redis returns binary data, the decoder tries each encoding in the pipeline until one succeeds.
+Controls how Redis values are decoded from bytes to strings and encoded back to bytes. When Redis returns binary data that can't be decoded with the specified encoding, it falls back to a bytes literal representation.
 
-- **Default**: `["utf-8"]` - Only try UTF-8 decoding
-- **Multiple encodings**: `["utf-8", "utf-16", "latin-1"]` - Try encodings in order
-- **Fallback behavior**: If all encodings fail, returns a raw byte string representation
+NOTE: More most setups, specifying this setting explicitly may not be needed. the default utf-8
+encoding will usually be fine.
 
-**Examples:**
-
-```python
-# Default - UTF-8 only
-"DECODER_PIPELINE": ["utf-8"]
-
-# Multiple encodings for international data
-"DECODER_PIPELINE": ["utf-8", "utf-16", "latin-1"]
-
-# Handle legacy systems with different encodings
-"DECODER_PIPELINE": ["utf-8", "cp1252", "iso-8859-1"]
-```
+- **Default**: `"utf-8"` - Use UTF-8 encoding
+- **Alternative encodings**: `"latin-1"`, `"utf-16"`, `"cp1252"`, etc.
+- **Fallback behavior**: If encoding fails, returns a bytes literal representation (e.g., `b'\x80\x04...'`)
 
 **Use Cases:**
 
 - **Binary Data**: When Redis contains pickle, msgpack, or other binary data
 - **Legacy Systems**: When dealing with data encoded in non-UTF-8 formats
-- **International Data**: When data might be encoded in various character sets
+- **International Data**: When data might be encoded in different character sets
 
 !!! warning "Binary Data Handling"
     When the decoder encounters binary data that can't be decoded with any encoding in the pipeline, it displays the data as a bytes literal representation (e.g., `b'\x80\x04\x95...'`). This clearly indicates binary data and prevents UTF-8 decoding errors while still allowing you to see and manage the data.
@@ -210,8 +200,8 @@ DJ_REDIS_PANEL_SETTINGS = {
     "socket_timeout": 10.0,
     "socket_connect_timeout": 5.0,
     
-    # Default UTF-8 decoding (can handle binary data gracefully)
-    "DECODER_PIPELINE": ["utf-8"],
+    # Default UTF-8 encoding (can handle binary data gracefully)
+    "encoder": "utf-8",
     
     "INSTANCES": {
         "default": {
@@ -301,40 +291,6 @@ DJ_REDIS_PANEL_SETTINGS = {
     }
 }
 ```
-
-### Binary Data Handling
-
-When working with Redis instances that contain binary data (pickle, msgpack, protobuf, etc.), configure the decoder pipeline appropriately:
-
-```python
-DJ_REDIS_PANEL_SETTINGS = {
-    # Enable editing but be careful with binary data
-    "ALLOW_KEY_DELETE": True,
-    "ALLOW_KEY_EDIT": False,  # Disable editing to prevent corruption
-    "ALLOW_TTL_UPDATE": True,
-    
-    # Multiple encodings to handle various data formats
-    "DECODER_PIPELINE": ["utf-8", "latin-1"],
-    
-    "INSTANCES": {
-        "binary_data": {
-            "description": "Redis with Binary Data",
-            "host": "127.0.0.1",
-            "port": 6379,
-            "features": {
-                # Override global setting - no editing for binary data
-                "ALLOW_KEY_EDIT": False,
-            },
-        },
-    }
-}
-```
-
-!!! tip "Binary Data Best Practices"
-    - Set `ALLOW_KEY_EDIT: False` for instances with binary data to prevent corruption
-    - Use `["utf-8", "latin-1"]` as a safe decoder pipeline for mixed data
-    - Binary data will be displayed as bytes literals (e.g., `b'\x80\x04\x95...'`) for clear identification
-    - You can still view, search, and manage keys - just not edit their values directly
 
 ## Environment-Specific Configuration
 

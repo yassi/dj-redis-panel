@@ -24,14 +24,11 @@ class RedisPanelUtils:
     @classmethod
     def get_decoder(cls) -> RedisValueDecoder:
         """
-        Get a RedisValueDecoder instance configured with the encoding pipeline from settings.
-
-        Returns:
-            RedisValueDecoder instance with configured encoding pipeline
+        Get a RedisValueDecoder instance configured with the encoder from settings.
         """
         panel_settings = cls.get_settings()
-        encoding_pipeline = panel_settings.get("DECODER_PIPELINE", ["utf-8"])
-        return RedisValueDecoder(encoding_pipeline)
+        encoder = panel_settings.get("encoder", "utf-8")
+        return RedisValueDecoder(encoder)
 
     @classmethod
     def get_instances(cls) -> Dict[str, Dict[str, Any]]:

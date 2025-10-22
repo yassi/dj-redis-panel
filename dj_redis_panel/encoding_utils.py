@@ -7,12 +7,16 @@ class RedisValueDecoder:
     Falls back to raw byte string representation when all encodings fail.
     """
 
-    def __init__(self, encoding_pipeline: List[str] = None):
+    def __init__(self, encoder: str = "utf-8"):
         """
-        Initialize decoder with encoding pipeline.
-        """
+        Initialize decoder with encoder setting.
 
-        self.encoding_pipeline = encoding_pipeline or ["utf-8"]
+        Args:
+            encoder: Primary encoding to use (defaults to 'utf-8')
+        """
+        # Internally maintain a pipeline for flexibility, but expose simple encoder setting
+        self.encoder = encoder
+        self.encoding_pipeline = [encoder]
 
     def decode_value(self, value: Union[bytes, str, None]) -> Union[str, None]:
         """
