@@ -3,8 +3,8 @@ from typing import Dict, List, Union
 
 class RedisValueDecoder:
     """
-    Handles decoding of Redis values using a configurable pipeline of encodings.
-    Falls back to raw byte string representation when all encodings fail.
+    Handles decoding of Redis values using a configurable encoder.
+    Falls back to raw byte string representation when encoding fails.
     """
 
     def __init__(self, encoder: str = "utf-8"):
@@ -16,14 +16,15 @@ class RedisValueDecoder:
         """
         self.encoder = encoder
 
-        # establish a pipeline for encoding so we can try different decoding approaches.
-        # this can be expanded later to include more complex formats like msgpack or pickle if needed.
-        self.encoding_pipeline = [encoder]
-
     def decode_value(self, value: Union[bytes, str, None]) -> Union[str, None]:
         """
-        Decode a Redis value using the encoding pipeline. This is for string or bytes
-        only.
+        Decode a Redis value using the configured encoder.
+
+        Args:
+            value: The value to decode (bytes, str, or None)
+
+        Returns:
+            Decoded string or None if input was None
         """
         if value is None:
             return None
@@ -32,17 +33,14 @@ class RedisValueDecoder:
         if isinstance(value, str):
             return value
 
-        # If bytes, try each encoding in the pipeline
+        # If bytes, try to decode with the configured encoder
         if isinstance(value, bytes):
-            for encoding in self.encoding_pipeline:
-                try:
-                    return value.decode(encoding)
-                except (UnicodeDecodeError, LookupError):
-                    continue
-
-            # If all encodings fail, return raw byte string representation with b'' prefix
-            # This clearly indicates to the user that this is binary data
-            return repr(value)  # Keep the full b'...' representation
+            try:
+                return value.decode(self.encoder)
+            except (UnicodeDecodeError, LookupError):
+                # If encoding fails, return raw byte string representation with b'' prefix
+                # This clearly indicates to the user that this is binary data
+                return repr(value)  # Keep the full b'...' representation
 
         # For other types, convert to string
         return str(value)
@@ -96,20 +94,11 @@ class RedisValueDecoder:
 
                 return ast.literal_eval(value)
             except (ValueError, SyntaxError):
-                # If parsing fails, try manual parsing for simple cases
-                try:
-                    # Remove b' and ' wrapper and decode escape sequences
-                    inner_value = value[2:-1]
-                    return (
-                        bytes(inner_value, "utf-8")
-                        .decode("unicode_escape")
-                        .encode("latin1")
-                    )
-                except (UnicodeDecodeError, UnicodeEncodeError):
-                    # If conversion fails, return as-is
-                    return value
+                # If ast.literal_eval fails, don't attempt lossy fallback parsing
+                # Return the original value to avoid data corruption
+                return value
 
-        # For regular strings, try to encode with the first encoding in the pipeline
+        # For regular strings, try to encode with the configured encoder
         try:
             return value.encode(self.encoder)
         except (UnicodeEncodeError, LookupError):
