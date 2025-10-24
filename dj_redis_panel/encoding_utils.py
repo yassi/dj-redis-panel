@@ -86,8 +86,13 @@ class RedisValueDecoder:
         if not isinstance(value, str):
             return value
 
-        # Check if this looks like a bytes literal representation (starts with b' and ends with ')
-        if value.startswith("b'") and value.endswith("'"):
+        # Check if this looks like a bytes literal representation
+        # repr() can output either b'...' or b"..." depending on the content
+        is_bytes_repr = (value.startswith("b'") and value.endswith("'")) or (
+            value.startswith('b"') and value.endswith('"')
+        )
+
+        if is_bytes_repr:
             try:
                 # Use ast.literal_eval to safely parse the bytes literal
                 import ast
