@@ -302,6 +302,19 @@
     Supported Redis Data Types
   </a>
   
+    <nav class="md-nav" aria-label="Supported Redis Data Types">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#binary-data-handling" class="md-nav__link">
+    Binary Data Handling
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -579,6 +592,19 @@
     Supported Redis Data Types
   </a>
   
+    <nav class="md-nav" aria-label="Supported Redis Data Types">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#binary-data-handling" class="md-nav__link">
+    Binary Data Handling
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -635,14 +661,23 @@
 <li><strong>Django Admin Integration</strong>: Seamless integration with Django admin styling and dark mode</li>
 <li><strong>Permission Control</strong>: Respects Django admin permissions and staff-only access</li>
 <li><strong>Multiple Instances</strong>: Support for multiple Redis instances with different configurations</li>
+<li><strong>Encoder Settings</strong>: support for different encoding and decoding strategies</li>
+<li><strong>Binary Safe Value Editing</strong>: Full support for displaying and editing arbitrary byte strings</li>
 </ul>
 <h2 id="supported-redis-data-types">Supported Redis Data Types</h2>
 <ul>
-<li><strong>String</strong>: View and edit string values</li>
+<li><strong>String</strong>: View and edit string values, including binary data</li>
 <li><strong>List</strong>: Browse list items with pagination and edit/delete list items</li>
 <li><strong>Set</strong>: View set members and delete</li>
 <li><strong>Hash</strong>: Display hash fields and values in a table format. Ability to edit hash values and delete hash entries.</li>
 <li><strong>Sorted Set</strong>: Show sorted set members with scores. Able to delete set members and edit scores.</li>
+</ul>
+<h3 id="binary-data-handling">Binary Data Handling</h3>
+<p>Django Redis Panel safely handles binary data stored in Redis:</p>
+<ul>
+<li><strong>Automatic Detection</strong>: Binary data that can't be decoded using the configured encoding format (utf-8 by default) is automatically displayed as bytes literals (strings like <code>b'...'</code>)</li>
+<li><strong>Editable Format</strong>: Binary values appear as <code>b'...'</code> or <code>b"..."</code> and can be edited directly in this format. Use this method whenever you want to make edits without encoding data.</li>
+<li><strong>Common Use Cases</strong>: Though not perfect, this allows you to inspect objects with formats such as pickle or MessagePack. It is also useful in environments where there is a mixed set of encoding formats being used</li>
 </ul>
 <h2 id="requirements">Requirements</h2>
 <ul>

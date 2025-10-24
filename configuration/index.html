@@ -417,6 +417,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#encoder" class="md-nav__link">
+    encoder
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -810,6 +817,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#encoder" class="md-nav__link">
+    encoder
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1029,6 +1043,11 @@
 <td>Use cursor-based pagination for key values like lists and hashes</td>
 </tr>
 <tr>
+<td><code>encoder</code></td>
+<td><code>"utf-8"</code></td>
+<td>Encoding to use for decoding/encoding Redis values</td>
+</tr>
+<tr>
 <td><code>socket_timeout</code></td>
 <td><code>5.0</code></td>
 <td>Socket timeout in seconds for Redis operations</td>
@@ -1110,6 +1129,32 @@ method in order perform too many expensive queries on your instance.</p>
 <p class="admonition-title">Connection Timeout</p>
 <p>This timeout applies only to the initial connection establishment. Once connected, <code>socket_timeout</code> governs individual operations.</p>
 </div>
+<h4 id="encoder"><code>encoder</code></h4>
+<p>Controls how Redis values are decoded from bytes to strings and encoded back to bytes. When Redis returns binary data that can't be decoded with the specified encoding, it falls back to a bytes literal representation.</p>
+<p>NOTE: More most setups, specifying this setting explicitly may not be needed. the default utf-8
+encoding will usually be fine.</p>
+<ul>
+<li><strong>Default</strong>: <code>"utf-8"</code> - Use UTF-8 encoding</li>
+<li><strong>Alternative encodings</strong>: <code>"latin-1"</code>, <code>"utf-16"</code>, <code>"cp1252"</code>, etc.</li>
+<li><strong>Fallback behavior</strong>: If encoding fails, returns a bytes literal representation (e.g., <code>b'\x80\x04...'</code>)</li>
+</ul>
+<p><strong>Use Cases:</strong></p>
+<ul>
+<li><strong>Binary Data</strong>: When Redis contains pickle, msgpack, or other binary data</li>
+<li><strong>Legacy Systems</strong>: When dealing with data encoded in non-UTF-8 formats</li>
+<li><strong>International Data</strong>: When data might be encoded in different character sets</li>
+</ul>
+<div class="admonition info">
+<p class="admonition-title">Binary Data Support</p>
+<p>Django Redis Panel provides comprehensive support for binary data:</p>
+<ul>
+<li><strong>Display</strong>: Binary data appears as bytes literals (e.g., <code>b'\x80\x04\x95...'</code>) when it can't be decoded as text</li>
+<li><strong>Editing</strong>: You can edit binary data directly using bytes literal format (<code>b'...'</code> or <code>b"..."</code>)</li>
+<li><strong>Format Handling</strong>: Supports both single-quoted and double-quoted bytes literals as produced by Python's <code>repr()</code></li>
+<li><strong>Data Integrity</strong>: Full round-trip safety ensures binary data remains unchanged through view/edit cycles</li>
+<li><strong>Common Use Cases</strong>: Perfect for pickled objects, msgpack data, protobuf, or any binary format stored in Redis</li>
+</ul>
+</div>
 <h2 id="instance-configuration">Instance Configuration</h2>
 <p>Each Redis instance is configured under the <code>INSTANCES</code> key. You can define multiple instances with different settings.</p>
 <h3 id="connection-methods">Connection Methods</h3>
@@ -1134,7 +1179,7 @@ method in order perform too many expensive queries on your instance.</p>
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="p">}</span>
 </span></code></pre></div>
 <h3 id="per-instance-feature-overrides">Per-Instance Feature Overrides</h3>
-<p>You can override global feature flags and timeout settings for individual instances:</p>
+<p>You can override global feature flags, timeout settings, and encoder for individual instances:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="s2">&quot;instance_name&quot;</span><span class="p">:</span> <span class="p">{</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Production Redis&quot;</span><span class="p">,</span>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="s2">&quot;host&quot;</span><span class="p">:</span> <span class="s2">&quot;prod-redis.example.com&quot;</span><span class="p">,</span>
@@ -1143,10 +1188,11 @@ method in order perform too many expensive queries on your instance.</p>
 </span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>        <span class="s2">&quot;ALLOW_KEY_DELETE&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>      <span class="c1"># Override global setting</span>
 </span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>        <span class="s2">&quot;CURSOR_PAGINATED_SCAN&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>  <span class="c1"># Use cursor pagination for this instance</span>
 </span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="p">},</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="c1"># Instance-specific timeout overrides</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>    <span class="s2">&quot;socket_timeout&quot;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span>         <span class="c1"># Allow longer operations for this instance</span>
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>    <span class="s2">&quot;socket_connect_timeout&quot;</span><span class="p">:</span> <span class="mf">5.0</span><span class="p">,</span>  <span class="c1"># Allow more time to connect to remote server</span>
-</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="p">}</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="c1"># Instance-specific overrides</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>    <span class="s2">&quot;encoder&quot;</span><span class="p">:</span> <span class="s2">&quot;latin-1&quot;</span><span class="p">,</span>           <span class="c1"># Use different encoding for this instance</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>    <span class="s2">&quot;socket_timeout&quot;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span>         <span class="c1"># Allow longer operations for this instance</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>    <span class="s2">&quot;socket_connect_timeout&quot;</span><span class="p">:</span> <span class="mf">5.0</span><span class="p">,</span>  <span class="c1"># Allow more time to connect to remote server</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="p">}</span>
 </span></code></pre></div>
 <h2 id="complete-configuration-examples">Complete Configuration Examples</h2>
 <h3 id="development-environment">Development Environment</h3>
@@ -1161,19 +1207,22 @@ method in order perform too many expensive queries on your instance.</p>
 </span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>    <span class="s2">&quot;socket_timeout&quot;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span>
 </span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>    <span class="s2">&quot;socket_connect_timeout&quot;</span><span class="p">:</span> <span class="mf">5.0</span><span class="p">,</span>
 </span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>
-</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>    <span class="s2">&quot;INSTANCES&quot;</span><span class="p">:</span> <span class="p">{</span>
-</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>        <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="p">{</span>
-</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Local Development Redis&quot;</span><span class="p">,</span>
-</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>            <span class="s2">&quot;host&quot;</span><span class="p">:</span> <span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span>
-</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>            <span class="s2">&quot;port&quot;</span><span class="p">:</span> <span class="mi">6379</span><span class="p">,</span>
-</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>        <span class="p">},</span>
-</span><span id="__span-5-18"><a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>        <span class="s2">&quot;cache&quot;</span><span class="p">:</span> <span class="p">{</span>
-</span><span id="__span-5-19"><a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Local Cache Redis&quot;</span><span class="p">,</span>
-</span><span id="__span-5-20"><a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a>            <span class="s2">&quot;host&quot;</span><span class="p">:</span> <span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span>
-</span><span id="__span-5-21"><a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a>            <span class="s2">&quot;port&quot;</span><span class="p">:</span> <span class="mi">6379</span><span class="p">,</span>
-</span><span id="__span-5-22"><a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a>        <span class="p">},</span>
-</span><span id="__span-5-23"><a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a>    <span class="p">}</span>
-</span><span id="__span-5-24"><a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a><span class="p">}</span>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>    <span class="c1"># Default UTF-8 encoding (can handle binary data gracefully)</span>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>    <span class="s2">&quot;encoder&quot;</span><span class="p">:</span> <span class="s2">&quot;utf-8&quot;</span><span class="p">,</span>
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>
+</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>    <span class="s2">&quot;INSTANCES&quot;</span><span class="p">:</span> <span class="p">{</span>
+</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>        <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="p">{</span>
+</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Local Development Redis&quot;</span><span class="p">,</span>
+</span><span id="__span-5-18"><a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>            <span class="s2">&quot;host&quot;</span><span class="p">:</span> <span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span>
+</span><span id="__span-5-19"><a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>            <span class="s2">&quot;port&quot;</span><span class="p">:</span> <span class="mi">6379</span><span class="p">,</span>
+</span><span id="__span-5-20"><a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a>        <span class="p">},</span>
+</span><span id="__span-5-21"><a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a>        <span class="s2">&quot;cache&quot;</span><span class="p">:</span> <span class="p">{</span>
+</span><span id="__span-5-22"><a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a>            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Local Cache Redis&quot;</span><span class="p">,</span>
+</span><span id="__span-5-23"><a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a>            <span class="s2">&quot;host&quot;</span><span class="p">:</span> <span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span>
+</span><span id="__span-5-24"><a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a>            <span class="s2">&quot;port&quot;</span><span class="p">:</span> <span class="mi">6379</span><span class="p">,</span>
+</span><span id="__span-5-25"><a id="__codelineno-5-25" name="__codelineno-5-25" href="#__codelineno-5-25"></a>        <span class="p">},</span>
+</span><span id="__span-5-26"><a id="__codelineno-5-26" name="__codelineno-5-26" href="#__codelineno-5-26"></a>    <span class="p">}</span>
+</span><span id="__span-5-27"><a id="__codelineno-5-27" name="__codelineno-5-27" href="#__codelineno-5-27"></a><span class="p">}</span>
 </span></code></pre></div>
 <h3 id="production-environment">Production Environment</h3>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">DJ_REDIS_PANEL_SETTINGS</span> <span class="o">=</span> <span class="p">{</span>
