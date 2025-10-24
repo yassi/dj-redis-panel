@@ -208,6 +208,7 @@ underlying redis client (redis-py)
 | `ALLOW_TTL_UPDATE` | `True` | Allow updating key TTL (expiration) |
 | `CURSOR_PAGINATED_SCAN` | `False` | Use cursor-based pagination instead of page-based |
 | `CURSOR_PAGINATED_COLLECTIONS` | `False` | Use cursor based pagination for key values like lists and hashs |
+| `encoder` | `"utf-8"` | Encoding to use for decoding/encoding Redis values |
 | `socket_timeout` | 5.0 | timeout for redis opertation after established connection |
 | `socket_connect_timeout` | 3.0 | timeout for initial connection to redis instance |
 
