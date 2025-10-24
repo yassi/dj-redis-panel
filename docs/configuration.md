@@ -33,6 +33,7 @@ These settings apply to all Redis instances unless overridden at the instance le
 | `ALLOW_TTL_UPDATE` | `False` | Allow updating key TTL (expiration) |
 | `CURSOR_PAGINATED_SCAN` | `False` | Use cursor-based pagination instead of page-based |
 | `CURSOR_PAGINATED_COLLECTIONS` | `False` | Use cursor-based pagination for key values like lists and hashes |
+| `encoder` | `"utf-8"` | Encoding to use for decoding/encoding Redis values |
 | `socket_timeout` | `5.0` | Socket timeout in seconds for Redis operations |
 | `socket_connect_timeout` | `3.0` | Connection timeout in seconds for establishing Redis connections |
 
@@ -109,6 +110,32 @@ Controls how long to wait when establishing a connection to Redis.
 !!! info "Connection Timeout"
     This timeout applies only to the initial connection establishment. Once connected, `socket_timeout` governs individual operations.
 
+#### `encoder`
+
+Controls how Redis values are decoded from bytes to strings and encoded back to bytes. When Redis returns binary data that can't be decoded with the specified encoding, it falls back to a bytes literal representation.
+
+NOTE: More most setups, specifying this setting explicitly may not be needed. the default utf-8
+encoding will usually be fine.
+
+- **Default**: `"utf-8"` - Use UTF-8 encoding
+- **Alternative encodings**: `"latin-1"`, `"utf-16"`, `"cp1252"`, etc.
+- **Fallback behavior**: If encoding fails, returns a bytes literal representation (e.g., `b'\x80\x04...'`)
+
+**Use Cases:**
+
+- **Binary Data**: When Redis contains pickle, msgpack, or other binary data
+- **Legacy Systems**: When dealing with data encoded in non-UTF-8 formats
+- **International Data**: When data might be encoded in different character sets
+
+!!! info "Binary Data Support"
+    Django Redis Panel provides comprehensive support for binary data:
+    
+    - **Display**: Binary data appears as bytes literals (e.g., `b'\x80\x04\x95...'`) when it can't be decoded as text
+    - **Editing**: You can edit binary data directly using bytes literal format (`b'...'` or `b"..."`)
+    - **Format Handling**: Supports both single-quoted and double-quoted bytes literals as produced by Python's `repr()`
+    - **Data Integrity**: Full round-trip safety ensures binary data remains unchanged through view/edit cycles
+    - **Common Use Cases**: Perfect for pickled objects, msgpack data, protobuf, or any binary format stored in Redis
+
 ## Instance Configuration
 
 Each Redis instance is configured under the `INSTANCES` key. You can define multiple instances with different settings.
@@ -146,7 +173,7 @@ Each Redis instance is configured under the `INSTANCES` key. You can define mult
 
 ### Per-Instance Feature Overrides
 
-You can override global feature flags and timeout settings for individual instances:
+You can override global feature flags, timeout settings, and encoder for individual instances:
 
 ```python
 "instance_name": {
@@ -157,7 +184,8 @@ You can override global feature flags and timeout settings for individual instan
         "ALLOW_KEY_DELETE": False,      # Override global setting
         "CURSOR_PAGINATED_SCAN": True,  # Use cursor pagination for this instance
     },
-    # Instance-specific timeout overrides
+    # Instance-specific overrides
+    "encoder": "latin-1",           # Use different encoding for this instance
     "socket_timeout": 10.0,         # Allow longer operations for this instance
     "socket_connect_timeout": 5.0,  # Allow more time to connect to remote server
 }
@@ -178,6 +206,9 @@ DJ_REDIS_PANEL_SETTINGS = {
     # Relaxed timeouts for development
     "socket_timeout": 10.0,
     "socket_connect_timeout": 5.0,
+    
+    # Default UTF-8 encoding (can handle binary data gracefully)
+    "encoder": "utf-8",
     
     "INSTANCES": {
         "default": {

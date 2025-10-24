@@ -433,9 +433,13 @@ class KeyDetailView(View):
         new_value = self.request.POST.get("new_value", "")
 
         if key_data["type"] == "string":
-            redis_conn = RedisPanelUtils.get_redis_connection(self.instance_alias)
-            redis_conn.select(self.db_number)
-            redis_conn.set(self.key_name, new_value)
+            # Use the dedicated redis_utils method for updating string values
+            result = RedisPanelUtils.update_string_value(
+                self.instance_alias, self.db_number, self.key_name, new_value
+            )
+
+            if not result["success"]:
+                return None, result["error"], key_data
 
             # Refresh key data (use non-paginated for editing)
             key_data = RedisPanelUtils.get_key_data(
@@ -443,7 +447,7 @@ class KeyDetailView(View):
             )
             key_data = self._add_pagination_info_to_key_data(key_data)
 
-            return "Key value updated successfully", None, key_data
+            return result["message"], None, key_data
         else:
             return (
                 None,

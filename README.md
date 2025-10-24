@@ -27,11 +27,20 @@ A Django Admin panel for browsing, inspecting, and managing Redis keys. No postg
 
 ## Supported Redis Data Types
 
-- **String**: View and edit string values
+- **String**: View and edit string values, including binary data
 - **List**: Browse list items with pagination
 - **Set**: View set members
 - **Hash**: Display hash fields and values in a table format
 - **Sorted Set**: Show sorted set members with scores
+
+### Binary Data Support
+
+Django Redis Panel provides full support for displaying and editing arbitrary byte strings:
+
+- **Safe Display**: Binary data is displayed as bytes literals (e.g., `b'\x80\x04\x95...'`) when it can't be decoded as text
+- **Editable**: You can edit binary data directly using the bytes literal format (`b'...'` or `b"..."`)
+- **Round-trip Safe**: Binary data maintains integrity through view/edit cycles
+- **Multiple Formats**: Handles both single-quoted (`b'...'`) and double-quoted (`b"..."`) bytes literals
 
 ### Project Structure
 
