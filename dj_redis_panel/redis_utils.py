@@ -1405,6 +1405,50 @@ class RedisPanelUtils:
             return {"success": False, "error": str(e)}
 
     @classmethod
+    def update_string_value(
+        cls,
+        instance_alias: str,
+        db_number: int,
+        key_name: str,
+        new_value: str,
+    ) -> Dict[str, Any]:
+        """
+        Update the value of a Redis string key.
+        """
+        try:
+            redis_conn = cls.get_redis_connection(instance_alias)
+            redis_conn.select(db_number)
+            decoder = cls.get_decoder(instance_alias)
+
+            # Check if key exists and is a string (or doesn't exist yet)
+            if redis_conn.exists(key_name):
+                key_type = decoder.decode_value(redis_conn.type(key_name))
+                if key_type != "string":
+                    return {
+                        "success": False,
+                        "error": f"Key '{key_name}' exists but is not a string (type: {key_type})",
+                    }
+
+            # Convert the new value to the format expected by Redis
+            redis_new_value = decoder.encode_for_redis(new_value)
+
+            # Update the string value
+            redis_conn.set(key_name, redis_new_value)
+
+            return {
+                "success": True,
+                "error": None,
+                "message": "Key value updated successfully",
+            }
+
+        except Exception as e:
+            logger.exception(
+                f"Error updating string value for {instance_alias} in db {db_number} for key {key_name}",
+                exc_info=True,
+            )
+            return {"success": False, "error": str(e)}
+
+    @classmethod
     def update_zset_member_score(
         cls,
         instance_alias: str,
