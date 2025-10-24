@@ -34,7 +34,7 @@ Django Redis Panel seamlessly integrates into your existing Django admin interfa
 Django Redis Panel safely handles binary data stored in Redis:
 
 - **Automatic Detection**: Binary data that can't be decoded using the configured encoding format (utf-8 by default) is automatically displayed as bytes literals (strings like `b'...'`)
-- **Editable Format**: Binary values appear as `b'...'` or `b"..."` and can be edited directly in this format. User this method whenever you want to make edits without encoding data.
+- **Editable Format**: Binary values appear as `b'...'` or `b"..."` and can be edited directly in this format. Use this method whenever you want to make edits without encoding data.
 - **Common Use Cases**: Though not perfect, this allows you to inspect objects with formats such as pickle or MessagePack. It is also useful in environments where there is a mixed set of encoding formats being used
 
 
