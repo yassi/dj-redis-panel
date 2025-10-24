@@ -81,6 +81,7 @@ String keys are displayed with syntax highlighting and full editing capabilities
 - TTL management controls
 - Delete confirmation
 - JSON/XML automatic formatting
+- Binary data support with bytes literal display and editing
 
 ## Key Detail - Complex Data Structures
 

@@ -110,7 +110,7 @@ Controls how long to wait when establishing a connection to Redis.
 !!! info "Connection Timeout"
     This timeout applies only to the initial connection establishment. Once connected, `socket_timeout` governs individual operations.
 
-#### `ENCODER`
+#### `encoder`
 
 Controls how Redis values are decoded from bytes to strings and encoded back to bytes. When Redis returns binary data that can't be decoded with the specified encoding, it falls back to a bytes literal representation.
 
@@ -127,8 +127,14 @@ encoding will usually be fine.
 - **Legacy Systems**: When dealing with data encoded in non-UTF-8 formats
 - **International Data**: When data might be encoded in different character sets
 
-!!! warning "Binary Data Handling"
-    When the decoder encounters binary data that can't be decoded with any encoding in the pipeline, it displays the data as a bytes literal representation (e.g., `b'\x80\x04\x95...'`). This clearly indicates binary data and prevents UTF-8 decoding errors while still allowing you to see and manage the data.
+!!! info "Binary Data Support"
+    Django Redis Panel provides comprehensive support for binary data:
+    
+    - **Display**: Binary data appears as bytes literals (e.g., `b'\x80\x04\x95...'`) when it can't be decoded as text
+    - **Editing**: You can edit binary data directly using bytes literal format (`b'...'` or `b"..."`)
+    - **Format Handling**: Supports both single-quoted and double-quoted bytes literals as produced by Python's `repr()`
+    - **Data Integrity**: Full round-trip safety ensures binary data remains unchanged through view/edit cycles
+    - **Common Use Cases**: Perfect for pickled objects, msgpack data, protobuf, or any binary format stored in Redis
 
 ## Instance Configuration
 
