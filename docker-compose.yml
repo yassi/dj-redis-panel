@@ -1,6 +1,28 @@
 version: "3.9"
 
 services:
+
+  dev:
+    build:
+      context: .
+      dockerfile: example_project/Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    working_dir: /app/example_project
+    tty: true
+    stdin_open: true
+    networks:
+      - default
+      - redis-cluster
+    depends_on:
+      - redis
+      - redis-node-0
+      - redis-node-1
+      - redis-node-2
+    command: "/bin/bash"
+
   # Standalone Redis server
   redis:
     image: redis:7
@@ -40,8 +62,7 @@ services:
     command: redis-server --port 6379 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes --appendfilename node-2.aof
     networks:
       - redis-cluster
-
-  # Cluster initialization, takes a little while to complete
+  # Cluster initialization
   redis-cluster-init:
     image: redis:7
     depends_on:
