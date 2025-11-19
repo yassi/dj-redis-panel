@@ -5,7 +5,9 @@ WORKDIR /app
 # Copy requirements from root
 COPY requirements.txt /app/requirements.txt
 RUN pip install -r requirements.txt
-RUN pip install -e .
 
 # Copy entire project
 COPY . /app/
+
+# Install the package in editable mode
+RUN pip install -e .
