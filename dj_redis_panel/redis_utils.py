@@ -1,4 +1,5 @@
 import redis
+from redis.cluster import ClusterNode, RedisCluster
 import logging
 from django.conf import settings
 from typing import Dict, Any
@@ -87,13 +88,13 @@ class RedisPanelUtils:
 
         instance_config = instances[instance_alias]
 
-        # Handle different connection types (future: cluster, sentinel)
+        # Handle different connection types (cluster, single, sentinel)
         connection_type = instance_config.get("type", "single")
 
         if connection_type == "single":
             return cls._create_single_connection(instance_config)
-        # Future: elif connection_type == "cluster":
-        #     return cls._create_cluster_connection(instance_config)
+        elif connection_type == "cluster":
+            return cls._create_cluster_connection(instance_config)
         else:
             raise ValueError(f"Unsupported Redis connection type: {connection_type}")
 
@@ -160,6 +161,80 @@ class RedisPanelUtils:
         return redis.Redis(**connection_params)
 
     @classmethod
+    def _create_cluster_connection(cls, config: Dict[str, Any]) -> RedisCluster:
+        """
+        Create a connection to a Redis Cluster.
+
+        Supports two configuration methods:
+        1. URL-based (recommended for ElastiCache and managed clusters - auto-discovers nodes)
+        2. startup_nodes (for self-managed clusters where you specify all nodes)
+        """
+        global_settings = cls.get_settings()
+
+        # Get timeout configuration for this instance or use global settings
+        socket_timeout = config.get(
+            "socket_timeout",
+            global_settings.get("socket_timeout", DEFAULT_SOCKET_TIMEOUT),
+        )
+        socket_connect_timeout = config.get(
+            "socket_connect_timeout",
+            global_settings.get(
+                "socket_connect_timeout", DEFAULT_SOCKET_CONNECT_TIMEOUT
+            ),
+        )
+
+        # Method 1: URL-based connection (ElastiCache, managed clusters)
+        # This auto-discovers all cluster nodes from the configuration endpoint
+        if "url" in config:
+            logger.debug("Creating Redis Cluster connection from URL")
+
+            cluster_kwargs = {
+                "decode_responses": False,
+                "skip_full_coverage_check": True,
+                "socket_timeout": socket_timeout,
+                "socket_connect_timeout": socket_connect_timeout,
+            }
+
+            # Handle SSL connections (rediss://)
+            if config["url"].startswith("rediss://"):
+                cluster_kwargs["ssl"] = True
+                # ElastiCache often requires relaxed SSL cert validation
+                if "ssl_cert_reqs" in config:
+                    cluster_kwargs["ssl_cert_reqs"] = config["ssl_cert_reqs"]
+
+            return RedisCluster.from_url(config["url"], **cluster_kwargs)
+
+        # Method 2: Explicit startup_nodes (self-managed clusters)
+        elif "startup_nodes" in config:
+            startup_nodes_config = config.get("startup_nodes", [])
+            if not startup_nodes_config:
+                raise ValueError("Redis cluster 'startup_nodes' cannot be empty")
+
+            # Convert dict nodes to ClusterNode objects
+            startup_nodes = [
+                ClusterNode(host=node["host"], port=node["port"])
+                for node in startup_nodes_config
+            ]
+
+            logger.debug(
+                f"Creating Redis Cluster connection with {len(startup_nodes)} startup nodes"
+            )
+
+            return RedisCluster(
+                startup_nodes=startup_nodes,
+                decode_responses=False,
+                skip_full_coverage_check=True,
+                socket_timeout=socket_timeout,
+                socket_connect_timeout=socket_connect_timeout,
+            )
+
+        else:
+            raise Exception(
+                "Redis cluster configuration requires either 'url' (for managed clusters like ElastiCache) "
+                "or 'startup_nodes' (for self-managed clusters)"
+            )
+
+    @classmethod
     def get_instance_meta_data(cls, instance_alias: str) -> Dict[str, Any]:
         """
         Ping a redis instance and return meta data about the instance.
@@ -169,24 +244,46 @@ class RedisPanelUtils:
             redis_conn = cls.get_redis_connection(instance_alias)
             redis_conn.ping()
             info = redis_conn.info()
+
+            # Check if this is a cluster
+            is_cluster = info.get("cluster_enabled", 0) == 1
+
             total_keys = 0
             databases = []
 
-            # Get all databases, their key counts and other info
-            for db_num in range(16):
-                db_key = f"db{db_num}"
-                if db_key in info:
-                    db_info = info[db_key]
-                    key_count = db_info.get("keys", 0)
-                    total_keys += key_count
-                    if key_count > 0 or db_num == 0:
-                        databases.append(
-                            {
-                                "db_number": db_num,
-                                "is_default": db_num == 0,
-                                **db_info,
-                            }
-                        )
+            if is_cluster:
+                # Redis Cluster only supports database 0
+                # Get key count from DBSIZE command
+                try:
+                    total_keys = redis_conn.dbsize()
+                except Exception:
+                    total_keys = 0
+
+                databases = [
+                    {
+                        "db_number": 0,
+                        "is_default": True,
+                        "keys": total_keys,
+                        "expires": 0,  # Cluster doesn't provide this easily
+                        "avg_ttl": 0,
+                    }
+                ]
+            else:
+                # Standard Redis instance - enumerate all databases
+                for db_num in range(16):
+                    db_key = f"db{db_num}"
+                    if db_key in info:
+                        db_info = info[db_key]
+                        key_count = db_info.get("keys", 0)
+                        total_keys += key_count
+                        if key_count > 0 or db_num == 0:
+                            databases.append(
+                                {
+                                    "db_number": db_num,
+                                    "is_default": db_num == 0,
+                                    **db_info,
+                                }
+                            )
 
             hero_numbers = {
                 "version": info.get("redis_version", "Unknown"),
@@ -195,6 +292,7 @@ class RedisPanelUtils:
                 "connected_clients": info.get("connected_clients", 0),
                 "uptime": info.get("uptime_in_seconds", 0),
                 "total_commands_processed": info.get("total_commands_processed", 0),
+                "cluster_enabled": is_cluster,
             }
 
             return {
@@ -236,7 +334,16 @@ class RedisPanelUtils:
         """
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
-            redis_conn.select(db_number)
+
+            # Check if this is a cluster - clusters don't support SELECT command
+            instances = cls.get_instances()
+            instance_config = instances.get(instance_alias, {})
+            is_cluster = instance_config.get("type") == "cluster"
+
+            # Only SELECT database if not a cluster (clusters only support db 0)
+            if not is_cluster:
+                redis_conn.select(db_number)
+
             decoder = cls.get_decoder(instance_alias)
 
             # Scan all matching keys
@@ -356,7 +463,16 @@ class RedisPanelUtils:
         """
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
-            redis_conn.select(db_number)
+
+            # Check if this is a cluster - clusters don't support SELECT command
+            instances = cls.get_instances()
+            instance_config = instances.get(instance_alias, {})
+            is_cluster = instance_config.get("type") == "cluster"
+
+            # Only SELECT database if not a cluster (clusters only support db 0)
+            if not is_cluster:
+                redis_conn.select(db_number)
+
             decoder = cls.get_decoder(instance_alias)
 
             # Use the provided cursor directly - no approximation needed
