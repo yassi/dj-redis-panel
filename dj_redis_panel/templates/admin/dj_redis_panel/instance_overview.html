@@ -45,6 +45,18 @@
                     <strong>{% trans 'Commands Processed' %}</strong><br>
                     <span class="stat-value">{{ hero_numbers.total_commands_processed|floatformat:0 }}</span>
                 </div>
+                {% if hero_numbers.cluster_enabled is not None %}
+                <div class="stat-item">
+                    <strong>{% trans 'Cluster Mode' %}</strong><br>
+                    <span class="stat-value {% if hero_numbers.cluster_enabled %}stat-success{% else %}stat-disabled{% endif %}">
+                        {% if hero_numbers.cluster_enabled %}
+                            {% trans 'ENABLED' %}
+                        {% else %}
+                            {% trans 'DISABLED' %}
+                        {% endif %}
+                    </span>
+                </div>
+                {% endif %}
             </div>
         </div>
         {% endif %}

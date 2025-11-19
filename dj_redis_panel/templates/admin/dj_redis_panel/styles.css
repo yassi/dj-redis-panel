@@ -74,6 +74,18 @@
     color: var(--link-fg, #417690);
 }
 
+.stat-value.stat-success {
+    color: #30a030;
+}
+
+.stat-value.stat-warning {
+    color: #e47911;
+}
+
+.stat-value.stat-disabled {
+    color: #999;
+}
+
 .default-badge {
     background: var(--link-fg, #417690);
     color: var(--body-bg, white);
