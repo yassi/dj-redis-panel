@@ -135,8 +135,14 @@ def key_search(request, instance_alias, db_number):
         except (ValueError, TypeError):
             cursor_int = 0
 
-        # Check if cursor-based pagination is enabled for this instance
-        use_cursor_pagination = RedisPanelUtils.is_feature_enabled(
+        # Check if this is a cluster - clusters MUST use cursor pagination
+        instances = RedisPanelUtils.get_instances()
+        instance_config_obj = instances.get(instance_alias, {})
+        is_cluster = instance_config_obj.get("type") == "cluster"
+
+        # Clusters always use cursor pagination (full scan is anti-pattern for clusters)
+        # For standalone, check feature flag
+        use_cursor_pagination = is_cluster or RedisPanelUtils.is_feature_enabled(
             instance_alias, "CURSOR_PAGINATED_SCAN"
         )
 

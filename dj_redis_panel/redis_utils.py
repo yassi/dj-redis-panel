@@ -359,13 +359,40 @@ class RedisPanelUtils:
 
         Scans all matching keys first, then applies pagination.
         This ensures accurate pagination information and total counts.
+
+        WARNING: This method should NOT be used for Redis Clusters as it scans
+        all keys across all nodes, which is inefficient and can cause performance
+        issues. Use cursor_paginated_scan() for clusters instead.
         """
         try:
+            # Check if this is a cluster FIRST - refuse to do full scan on clusters
+            instances = cls.get_instances()
+            instance_config = instances.get(instance_alias, {})
+            is_cluster = instance_config.get("type") == "cluster"
+
+            if is_cluster:
+                logger.error(
+                    f"paginated_scan called on cluster '{instance_alias}'. "
+                    "This is an anti-pattern! Use cursor_paginated_scan instead."
+                )
+                return {
+                    "keys": [],
+                    "keys_with_details": [],
+                    "total_keys": 0,
+                    "page": page,
+                    "per_page": per_page,
+                    "total_pages": 0,
+                    "has_more": False,
+                    "scan_complete": False,
+                    "limited_scan": False,
+                    "error": "Full scan not supported on clusters. Please use cursor pagination instead.",
+                }
+
             redis_conn = cls.get_redis_connection(instance_alias)
             cls._select_db_if_not_cluster(redis_conn, instance_alias, db_number)
             decoder = cls.get_decoder(instance_alias)
 
-            # Scan all matching keys
+            # Scan all matching keys (standalone Redis only)
             cursor = 0
             all_keys = []
             scan_iterations = 0
@@ -479,27 +506,65 @@ class RedisPanelUtils:
         we scan the keys in chunks of scan_count. This is much more
         efficient and should be used whenever the dataset is too
         large and paginated_scan() is too slow.
+
+        Note: For Redis Cluster, cursor pagination is simulated using scan_iter
+        since clusters don't have a single global cursor.
         """
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
             cls._select_db_if_not_cluster(redis_conn, instance_alias, db_number)
             decoder = cls.get_decoder(instance_alias)
 
-            # Use the provided cursor directly - no approximation needed
-            current_cursor = cursor
+            # Check if this is a cluster
+            instances = cls.get_instances()
+            instance_config = instances.get(instance_alias, {})
+            is_cluster = instance_config.get("type") == "cluster"
+
             page_keys = []
+            current_cursor = 0
 
-            # Set scan_count to per_page for better cursor pagination behavior
-            # This encourages Redis to return approximately the right number of keys per iteration
-            scan_count = per_page
+            if is_cluster:
+                # For Redis Cluster, simulate cursor pagination with scan_iter
+                # Since clusters don't have a global cursor, we use scan_iter
+                # and skip/take based on the cursor value
+                try:
+                    keys_to_skip = cursor
+                    keys_collected = 0
 
-            # Perform one Redis SCAN iteration for this page
-            current_cursor, partial_keys = redis_conn.scan(
-                cursor=current_cursor, match=pattern, count=scan_count
-            )
+                    for key in redis_conn.scan_iter(match=pattern, count=per_page):
+                        if keys_to_skip > 0:
+                            keys_to_skip -= 1
+                            continue
 
-            # Filter keys from this scan iteration
-            page_keys = [k for k in partial_keys if k]
+                        page_keys.append(key)
+                        keys_collected += 1
+
+                        if keys_collected >= per_page:
+                            break
+
+                    # Next cursor is current position + keys collected
+                    current_cursor = (
+                        cursor + keys_collected if keys_collected > 0 else 0
+                    )
+
+                except Exception as e:
+                    logger.warning(f"Error during cluster scan_iter: {e}")
+                    current_cursor = 0
+            else:
+                # For standalone Redis, use traditional cursor-based scan
+                # Use the provided cursor directly - no approximation needed
+                current_cursor = cursor
+
+                # Set scan_count to per_page for better cursor pagination behavior
+                # This encourages Redis to return approximately the right number of keys per iteration
+                scan_count = per_page
+
+                # Perform one Redis SCAN iteration for this page
+                current_cursor, partial_keys = redis_conn.scan(
+                    cursor=current_cursor, match=pattern, count=scan_count
+                )
+                # Filter keys from this scan iteration
+                page_keys = [k for k in partial_keys if k]
 
             # Sort keys for consistent display
             page_keys.sort()
