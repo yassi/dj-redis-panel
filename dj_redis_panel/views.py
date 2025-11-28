@@ -464,7 +464,9 @@ class KeyDetailView(View):
 
         try:
             redis_conn = RedisPanelUtils.get_redis_connection(self.instance_alias)
-            redis_conn.select(self.db_number)
+            RedisPanelUtils._select_db_if_not_cluster(
+                redis_conn, self.instance_alias, self.db_number
+            )
 
             if new_ttl.strip() == "" or new_ttl == "-1":
                 redis_conn.persist(self.key_name)
@@ -499,7 +501,9 @@ class KeyDetailView(View):
             return render(self.request, "admin/dj_redis_panel/key_detail.html", context)
 
         redis_conn = RedisPanelUtils.get_redis_connection(self.instance_alias)
-        redis_conn.select(self.db_number)
+        RedisPanelUtils._select_db_if_not_cluster(
+            redis_conn, self.instance_alias, self.db_number
+        )
         redis_conn.delete(self.key_name)
 
         return HttpResponseRedirect(
