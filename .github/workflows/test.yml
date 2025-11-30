@@ -38,7 +38,7 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-            pytest --cov=dj_redis_panel --cov-report=xml
+            pytest --cov=dj_redis_panel --cov-report=xml -m "not cluster"
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
