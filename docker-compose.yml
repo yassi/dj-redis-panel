@@ -2,6 +2,7 @@ version: "3.9"
 
 services:
 
+  # Development container
   dev:
     build:
       context: .
@@ -18,9 +19,6 @@ services:
       - redis-cluster
     depends_on:
       - redis
-      - redis-node-0
-      - redis-node-1
-      - redis-node-2
     command: "/bin/bash"
 
   # Standalone Redis server
@@ -33,35 +31,30 @@ services:
   redis-node-0:
     image: redis:7
     ports:
-      - "6000:6379"
+      - "9000:6379"
       - "17000:16379"
-    volumes:
-      - redis-node-0-data:/data
-    command: redis-server --port 6379 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes --appendfilename node-0.aof
+    command: redis-server --port 6379 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes
     networks:
       - redis-cluster
 
   redis-node-1:
     image: redis:7
     ports:
-      - "6001:6379"
+      - "9001:6379"
       - "17001:16379"
-    volumes:
-      - redis-node-1-data:/data
-    command: redis-server --port 6379 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes --appendfilename node-1.aof
+    command: redis-server --port 6379 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes
     networks:
       - redis-cluster
 
   redis-node-2:
     image: redis:7
     ports:
-      - "6002:6379"
+      - "9002:6379"
       - "17002:16379"
-    volumes:
-      - redis-node-2-data:/data
-    command: redis-server --port 6379 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes --appendfilename node-2.aof
+    command: redis-server --port 6379 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes
     networks:
       - redis-cluster
+
   # Cluster initialization
   redis-cluster-init:
     image: redis:7
@@ -72,13 +65,8 @@ services:
     networks:
       - redis-cluster
     command: >
-      bash -c "sleep 5 && redis-cli --cluster create redis-node-0:6379 redis-node-1:6379 redis-node-2:6379 --cluster-replicas 0 --cluster-yes || true"
+      bash -c "sleep 5 && redis-cli --cluster create  redis-node-0:6379 redis-node-1:6379 redis-node-2:6379  --cluster-replicas 0 --cluster-yes || true"
 
 networks:
   redis-cluster:
     driver: bridge
-
-volumes:
-  redis-node-0-data:
-  redis-node-1-data:
-  redis-node-2-data:
