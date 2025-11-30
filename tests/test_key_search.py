@@ -4,6 +4,7 @@ Tests for the Django Redis Panel key search view using Django TestCase.
 The key search view provides paginated search functionality for Redis keys
 with support for both traditional page-based and cursor-based pagination.
 """
+import os
 import redis
 from django.urls import reverse
 from dj_redis_panel.views import _get_page_range
@@ -94,7 +95,7 @@ class TestKeySearchView(RedisTestCase):
     def test_key_search_cursor_pagination(self):
         """Test key search with cursor-based pagination enabled."""
         # Set up data in database 14 for the cursor pagination instance
-        conn_14 = redis.Redis(host='127.0.0.1', port=6379, db=14, decode_responses=True)
+        conn_14 = redis.Redis(host=os.environ.get('REDIS_HOST', '127.0.0.1'), port=6379, db=14, decode_responses=True)
         conn_14.set('cursor_test:1', 'value1')
         conn_14.set('cursor_test:2', 'value2')
         
@@ -144,7 +145,7 @@ class TestKeySearchView(RedisTestCase):
         """Test key search across different database numbers."""
         # Add data to different databases
         for db_num in [13, 14]:
-            conn = redis.Redis(host='127.0.0.1', port=6379, db=db_num, decode_responses=True)
+            conn = redis.Redis(host=os.environ.get('REDIS_HOST', '127.0.0.1'), port=6379, db=db_num, decode_responses=True)
             conn.set(f'db_{db_num}_key', f'db_{db_num}_value')
         
         try:
@@ -166,7 +167,7 @@ class TestKeySearchView(RedisTestCase):
         finally:
             # Cleanup
             for db_num in [13, 14]:
-                conn = redis.Redis(host='127.0.0.1', port=6379, db=db_num, decode_responses=True)
+                conn = redis.Redis(host=os.environ.get('REDIS_HOST', '127.0.0.1'), port=6379, db=db_num, decode_responses=True)
                 conn.flushdb()
     
     def test_key_search_per_page_options(self):

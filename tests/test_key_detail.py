@@ -5,6 +5,7 @@ The key detail view displays detailed information about a specific Redis key
 and provides CRUD operations (view, edit value, update TTL, delete) with
 feature flag support.
 """
+import os
 import redis
 from django.urls import reverse
 from .base import RedisTestCase
@@ -85,7 +86,7 @@ class TestKeyDetailView(RedisTestCase):
     def test_key_detail_feature_flags_disabled(self):
         """Test key detail with feature flags disabled."""
         # First, create the key in database 14
-        conn_14 = redis.Redis(host='127.0.0.1', port=6379, db=14, decode_responses=True)
+        conn_14 = redis.Redis(host=os.environ.get('REDIS_HOST', '127.0.0.1'), port=6379, db=14, decode_responses=True)
         conn_14.set('test:string', 'test_value')
         
         try:
@@ -120,7 +121,7 @@ class TestKeyDetailView(RedisTestCase):
     def test_key_detail_update_value_disabled(self):
         """Test key value update when editing is disabled."""
         # Create key in test database 14 (no_features instance)
-        conn_14 = redis.Redis(host='127.0.0.1', port=6379, db=14, decode_responses=True)
+        conn_14 = redis.Redis(host=os.environ.get('REDIS_HOST', '127.0.0.1'), port=6379, db=14, decode_responses=True)
         conn_14.set('test:string', 'original_value')
         
         try:
@@ -233,7 +234,7 @@ class TestKeyDetailView(RedisTestCase):
     def test_key_detail_delete_key_disabled(self):
         """Test key deletion when feature is disabled."""
         # Create key in test database 14 (no_features instance)
-        conn_14 = redis.Redis(host='127.0.0.1', port=6379, db=14, decode_responses=True)
+        conn_14 = redis.Redis(host=os.environ.get('REDIS_HOST', '127.0.0.1'), port=6379, db=14, decode_responses=True)
         conn_14.set('test:no_delete', 'protected_value')
         
         try:
@@ -393,7 +394,7 @@ class TestKeyDetailView(RedisTestCase):
         """Test cursor-based pagination for all large collection types using test_redis_cursor instance."""
         # Create connection to the cursor instance database (db 12)
         import redis
-        cursor_conn = redis.Redis(host='127.0.0.1', port=6379, db=12, decode_responses=True)
+        cursor_conn = redis.Redis(host=os.environ.get('REDIS_HOST', '127.0.0.1'), port=6379, db=12, decode_responses=True)
         
         # Test data: (key_suffix, key_type, create_function, total_items, per_page, special_validation)
         test_cases = [

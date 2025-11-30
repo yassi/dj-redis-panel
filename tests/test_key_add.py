@@ -4,6 +4,7 @@ Tests for the Django Redis Panel key addition view using Django TestCase.
 The key add view allows users to create new Redis keys of different types
 with feature flag support and proper validation.
 """
+import os
 import redis
 from django.urls import reverse
 from .base import RedisTestCase
@@ -260,7 +261,7 @@ class TestKeyAddView(RedisTestCase):
         self.assertIsNone(response.context['success_message'])
         
         # Verify key was NOT created
-        conn_14 = redis.Redis(host='127.0.0.1', port=6379, db=14, decode_responses=True)
+        conn_14 = redis.Redis(host=os.environ.get('REDIS_HOST', '127.0.0.1'), port=6379, db=14, decode_responses=True)
         self.assertFalse(conn_14.exists('test:disabled_feature'))
     
     def test_key_add_special_characters_in_name(self):

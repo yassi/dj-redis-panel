@@ -4,6 +4,7 @@ Tests for the Django Redis Panel instance overview view using Django TestCase.
 The instance overview view displays detailed information about a specific Redis 
 instance including connection status, database information, and key metrics.
 """
+import os
 import redis
 from django.urls import reverse
 from .base import RedisTestCase
@@ -58,7 +59,7 @@ class TestInstanceOverviewView(RedisTestCase):
         self.redis_conn.zadd('overview:zset', {'member1': 1.0, 'member2': 2.0})
         
         # Add specific data to database 14 for multi-database testing
-        conn_14 = redis.Redis(host='127.0.0.1', port=6379, db=14, decode_responses=True)
+        conn_14 = redis.Redis(host=os.environ.get('REDIS_HOST', '127.0.0.1'), port=6379, db=14, decode_responses=True)
         multi_db_data = {
             'multi_db:string': 'test_value',
             'multi_db:counter': '42',

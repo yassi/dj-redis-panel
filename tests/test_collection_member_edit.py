@@ -4,6 +4,7 @@ Tests for the Django Redis Panel collection member edit functionality.
 This module tests the ability to edit individual members in Redis collections
 (lists, hashes, and sorted sets) through the key detail view.
 """
+import os
 import redis
 from django.urls import reverse
 from .base import RedisTestCase
@@ -81,7 +82,7 @@ class TestCollectionMemberEdit(RedisTestCase):
     def test_update_list_item_disabled(self):
         """Test list item update when editing is disabled."""
         # Create key in test database 14 (no_features instance)
-        conn_14 = redis.Redis(host='127.0.0.1', port=6379, db=14, decode_responses=True)
+        conn_14 = redis.Redis(host=os.environ.get('REDIS_HOST', '127.0.0.1'), port=6379, db=14, decode_responses=True)
         list_key = 'test:edit_list_disabled'
         conn_14.rpush(list_key, 'item0', 'item1', 'item2')
         
@@ -150,7 +151,7 @@ class TestCollectionMemberEdit(RedisTestCase):
     def test_update_hash_field_value_disabled(self):
         """Test hash field value update when editing is disabled."""
         # Create key in test database 14 (no_features instance)
-        conn_14 = redis.Redis(host='127.0.0.1', port=6379, db=14, decode_responses=True)
+        conn_14 = redis.Redis(host=os.environ.get('REDIS_HOST', '127.0.0.1'), port=6379, db=14, decode_responses=True)
         hash_key = 'test:edit_hash_disabled'
         conn_14.hset(hash_key, mapping={'field1': 'value1', 'field2': 'value2'})
         
@@ -241,7 +242,7 @@ class TestCollectionMemberEdit(RedisTestCase):
     def test_update_zset_member_score_disabled(self):
         """Test sorted set member score update when editing is disabled."""
         # Create key in test database 14 (no_features instance)
-        conn_14 = redis.Redis(host='127.0.0.1', port=6379, db=14, decode_responses=True)
+        conn_14 = redis.Redis(host=os.environ.get('REDIS_HOST', '127.0.0.1'), port=6379, db=14, decode_responses=True)
         zset_key = 'test:edit_zset_disabled'
         conn_14.zadd(zset_key, {'member1': 1.0, 'member2': 2.0})
         
