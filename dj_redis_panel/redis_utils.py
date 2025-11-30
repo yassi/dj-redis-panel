@@ -511,6 +511,9 @@ class RedisPanelUtils:
         since clusters don't have a single global cursor.
         """
         try:
+            # Ensure cursor is an integer (it might come as string from query params)
+            cursor = int(cursor) if cursor else 0
+
             redis_conn = cls.get_redis_connection(instance_alias)
             cls._select_db_if_not_cluster(redis_conn, instance_alias, db_number)
             decoder = cls.get_decoder(instance_alias)
