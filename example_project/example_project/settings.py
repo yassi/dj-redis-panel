@@ -233,7 +233,7 @@ dj_redis_panel_settings_using_docker = {
                 "ALLOW_KEY_DELETE": True,
                 "ALLOW_KEY_EDIT": True,
                 "ALLOW_TTL_UPDATE": True,
-                "CURSOR_PAGINATED_SCAN": True,
+                "CURSOR_PAGINATED_SCAN": False,
                 "CURSOR_PAGINATED_COLLECTIONS": True,
             },
         },
@@ -260,7 +260,7 @@ dj_redis_panel_settings_using_docker = {
     },
 }
 
-DJ_REDIS_PANEL_SETTINGS = dj_redis_panel_settings_without_docker
+DJ_REDIS_PANEL_SETTINGS = dj_redis_panel_settings_using_docker
 
 
 # Simple Console Logging Configuration
