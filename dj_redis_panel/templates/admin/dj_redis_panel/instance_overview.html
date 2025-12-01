@@ -45,6 +45,18 @@
                     <strong>{% trans 'Commands Processed' %}</strong><br>
                     <span class="stat-value">{{ hero_numbers.total_commands_processed|floatformat:0 }}</span>
                 </div>
+                {% if hero_numbers.cluster_enabled is not None %}
+                <div class="stat-item">
+                    <strong>{% trans 'Cluster Mode' %}</strong><br>
+                    <span class="stat-value {% if hero_numbers.cluster_enabled %}stat-success{% else %}stat-disabled{% endif %}">
+                        {% if hero_numbers.cluster_enabled %}
+                            {% trans 'ENABLED' %}
+                        {% else %}
+                            {% trans 'DISABLED' %}
+                        {% endif %}
+                    </span>
+                </div>
+                {% endif %}
             </div>
         </div>
         {% endif %}
@@ -98,13 +110,9 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if db.keys > 0 %}
-                                <a href="{% url 'dj_redis_panel:key_search' instance_alias db.db_number %}" class="default">
-                                    {% trans 'Browse Keys' %}
-                                </a>
-                            {% else %}
-                                <span class="quiet">{% trans 'No keys' %}</span>
-                            {% endif %}
+                            <a href="{% url 'dj_redis_panel:key_search' instance_alias db.db_number %}" class="default">
+                                {% trans 'Browse Keys' %}
+                            </a>
                         </td>
                     </tr>
                     {% endfor %}

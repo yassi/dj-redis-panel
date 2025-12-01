@@ -1,7 +1,72 @@
 version: "3.9"
 
 services:
+
+  # Development container
+  dev:
+    build:
+      context: .
+      dockerfile: example_project/Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    working_dir: /app/example_project
+    tty: true
+    stdin_open: true
+    networks:
+      - default
+      - redis-cluster
+    depends_on:
+      - redis
+    command: "/bin/bash"
+
+  # Standalone Redis server
   redis:
     image: redis:7
     ports:
       - "6379:6379"
+
+  # Redis Cluster nodes (3 masters, no replicas for testing)
+  redis-node-0:
+    image: redis:7
+    ports:
+      - "9000:6379"
+      - "17000:16379"
+    command: redis-server --port 6379 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes
+    networks:
+      - redis-cluster
+
+  redis-node-1:
+    image: redis:7
+    ports:
+      - "9001:6379"
+      - "17001:16379"
+    command: redis-server --port 6379 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes
+    networks:
+      - redis-cluster
+
+  redis-node-2:
+    image: redis:7
+    ports:
+      - "9002:6379"
+      - "17002:16379"
+    command: redis-server --port 6379 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes
+    networks:
+      - redis-cluster
+
+  # Cluster initialization
+  redis-cluster-init:
+    image: redis:7
+    depends_on:
+      - redis-node-0
+      - redis-node-1
+      - redis-node-2
+    networks:
+      - redis-cluster
+    command: >
+      bash -c "sleep 5 && redis-cli --cluster create  redis-node-0:6379 redis-node-1:6379 redis-node-2:6379  --cluster-replicas 0 --cluster-yes || true"
+
+networks:
+  redis-cluster:
+    driver: bridge

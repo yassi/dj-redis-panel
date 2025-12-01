@@ -126,8 +126,9 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
-# Django Redis Panel Configuration
-DJ_REDIS_PANEL_SETTINGS = {
+# Django Redis Panel Configuration for use when running on the a local machine.
+# without any docker based dev environment. Good for quick testing.
+dj_redis_panel_settings_without_docker = {
     "ALLOW_KEY_DELETE": False,  # Example of global feature
     "ALLOW_KEY_EDIT": False,
     "ALLOW_TTL_UPDATE": False,
@@ -153,6 +154,13 @@ DJ_REDIS_PANEL_SETTINGS = {
         "local_redis_from_url_no_features": {
             "description": "Local Redis Instance from URL",
             "url": "redis://127.0.0.1:6379",
+            "features": {
+                "ALLOW_KEY_DELETE": True,
+                "ALLOW_KEY_EDIT": True,
+                "ALLOW_TTL_UPDATE": True,
+                "CURSOR_PAGINATED_SCAN": False,
+                "CURSOR_PAGINATED_COLLECTIONS": False,
+            },
         },
         "Unreachable instance": {
             "description": "this instance should fail to connect",
@@ -162,6 +170,97 @@ DJ_REDIS_PANEL_SETTINGS = {
         },
     },
 }
+
+# Django Redis Panel Configuration when using the dev environment
+# defined in the docker-compose.yml file. This should be used when
+# testing cluster modes.
+dj_redis_panel_settings_using_docker = {
+    "ALLOW_KEY_DELETE": False,  # Example of global feature
+    "ALLOW_KEY_EDIT": False,
+    "ALLOW_TTL_UPDATE": False,
+    "CURSOR_PAGINATED_SCAN": False,
+    "CURSOR_PAGINATED_COLLECTIONS": False,
+    # Global timeout settings (in seconds)
+    # These will be used as defaults for all instances unless overridden
+    "socket_timeout": 5.0,  # Time to wait for socket operations
+    "socket_connect_timeout": 5.0,  # Time to wait for connection establishment
+    "INSTANCES": {
+        "local_redis": {
+            "description": "Local Redis Instance",
+            "host": "redis",
+            "port": 6379,
+            "features": {  # Instance-specific features, default to globalif not found
+                "ALLOW_KEY_DELETE": True,
+                "ALLOW_KEY_EDIT": True,
+                "ALLOW_TTL_UPDATE": True,
+                "CURSOR_PAGINATED_SCAN": True,
+                "CURSOR_PAGINATED_COLLECTIONS": True,
+            },
+        },
+        "local_redis_from_url_no_features": {
+            "description": "Local Redis Instance from URL",
+            "url": "redis://redis:6379",
+            "features": {
+                "ALLOW_KEY_DELETE": True,
+                "ALLOW_KEY_EDIT": True,
+                "ALLOW_TTL_UPDATE": True,
+                "CURSOR_PAGINATED_SCAN": False,
+                "CURSOR_PAGINATED_COLLECTIONS": False,
+            },
+        },
+        "redis-cluster": {
+            "description": "Redis Cluster (Manually specified nodes)",
+            "type": "cluster",
+            "startup_nodes": [
+                {"host": "redis-node-0", "port": 6379},
+                {"host": "redis-node-1", "port": 6379},
+                {"host": "redis-node-2", "port": 6379},
+            ],
+            "features": {
+                "ALLOW_KEY_DELETE": True,
+                "ALLOW_KEY_EDIT": True,
+                "ALLOW_TTL_UPDATE": True,
+                "CURSOR_PAGINATED_SCAN": True,
+                "CURSOR_PAGINATED_COLLECTIONS": True,
+            },
+        },
+        "redis-cluster-url": {
+            "description": "Redis Cluster (URL method - mimic elasticache style url for testing)",
+            "type": "cluster",
+            # Point to any node - RedisCluster will auto-discover all nodes
+            "url": "redis://redis-node-0:6379",
+            "features": {
+                "ALLOW_KEY_DELETE": True,
+                "ALLOW_KEY_EDIT": True,
+                "ALLOW_TTL_UPDATE": True,
+                "CURSOR_PAGINATED_SCAN": False,
+                "CURSOR_PAGINATED_COLLECTIONS": True,
+            },
+        },
+        # Example: ElastiCache Cluster Mode Enabled
+        # "elasticache-cluster": {
+        #     "description": "AWS ElastiCache Redis Cluster (for actually testing your own elasticache cluster)",
+        #     "type": "cluster",  # Required for cluster mode
+        #     "url": "rediss://my-cluster.clustercfg.use1.cache.amazonaws.com:6379",
+        #     "ssl_cert_reqs": None,  # Often needed for ElastiCache SSL
+        #     "features": {
+        #         "ALLOW_KEY_DELETE": True,
+        #         "ALLOW_KEY_EDIT": True,
+        #         "ALLOW_TTL_UPDATE": True,
+        #         "CURSOR_PAGINATED_SCAN": True,
+        #         "CURSOR_PAGINATED_COLLECTIONS": True,
+        #     },
+        # },
+        "Unreachable instance": {
+            "description": "this instance should fail to connect",
+            "url": "redis://127.1.1.1:6379",
+            "socket_connect_timeout": 0.1,
+            "socket_timeout": 0.1,
+        },
+    },
+}
+
+DJ_REDIS_PANEL_SETTINGS = dj_redis_panel_settings_using_docker
 
 
 # Simple Console Logging Configuration

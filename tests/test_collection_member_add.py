@@ -4,6 +4,7 @@ Tests for the Django Redis Panel collection member add functionality.
 This module tests the ability to add new members to Redis collections
 (lists, sets, sorted sets, and hashes) through the key detail view.
 """
+import os
 import redis
 from django.urls import reverse
 from .base import RedisTestCase
@@ -80,7 +81,7 @@ class TestCollectionMemberAdd(RedisTestCase):
     def test_add_list_item_disabled(self):
         """Test add_list_item when editing is disabled."""
         # Create key in test database 14 (no_features instance)
-        conn_14 = redis.Redis(host='127.0.0.1', port=6379, db=14, decode_responses=True)
+        conn_14 = redis.Redis(host=os.environ.get('REDIS_HOST', '127.0.0.1'), port=6379, db=14, decode_responses=True)
         list_key = 'test:add_list_disabled'
         conn_14.rpush(list_key, 'existing_item')
         
@@ -169,7 +170,7 @@ class TestCollectionMemberAdd(RedisTestCase):
     def test_add_set_member_disabled(self):
         """Test add_set_member when editing is disabled."""
         # Create key in test database 14 (no_features instance)
-        conn_14 = redis.Redis(host='127.0.0.1', port=6379, db=14, decode_responses=True)
+        conn_14 = redis.Redis(host=os.environ.get('REDIS_HOST', '127.0.0.1'), port=6379, db=14, decode_responses=True)
         set_key = 'test:add_set_disabled'
         conn_14.sadd(set_key, 'existing_member')
         
@@ -285,7 +286,7 @@ class TestCollectionMemberAdd(RedisTestCase):
     def test_add_zset_member_disabled(self):
         """Test add_zset_member when editing is disabled."""
         # Create key in test database 14 (no_features instance)
-        conn_14 = redis.Redis(host='127.0.0.1', port=6379, db=14, decode_responses=True)
+        conn_14 = redis.Redis(host=os.environ.get('REDIS_HOST', '127.0.0.1'), port=6379, db=14, decode_responses=True)
         zset_key = 'test:add_zset_disabled'
         conn_14.zadd(zset_key, {'existing_member': 1.0})
         
@@ -383,7 +384,7 @@ class TestCollectionMemberAdd(RedisTestCase):
     def test_add_hash_field_disabled(self):
         """Test add_hash_field when editing is disabled."""
         # Create key in test database 14 (no_features instance)
-        conn_14 = redis.Redis(host='127.0.0.1', port=6379, db=14, decode_responses=True)
+        conn_14 = redis.Redis(host=os.environ.get('REDIS_HOST', '127.0.0.1'), port=6379, db=14, decode_responses=True)
         hash_key = 'test:add_hash_disabled'
         conn_14.hset(hash_key, 'existing_field', 'existing_value')
         

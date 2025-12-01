@@ -1,4 +1,5 @@
 import redis
+from redis.cluster import ClusterNode, RedisCluster
 import logging
 from django.conf import settings
 from typing import Dict, Any
@@ -20,6 +21,19 @@ class RedisPanelUtils:
     def get_settings(cls) -> Dict[str, Any]:  # pragma: no cover
         panel_settings = getattr(settings, REDIS_PANEL_SETTINGS_NAME, {})
         return panel_settings
+
+    @classmethod
+    def _select_db_if_not_cluster(cls, redis_conn, instance_alias: str, db_number: int):
+        """
+        Select database only if not a cluster (clusters only support db 0).
+        Helper method to avoid code duplication.
+        """
+        instances = cls.get_instances()
+        instance_config = instances.get(instance_alias, {})
+        is_cluster = instance_config.get("type") == "cluster"
+
+        if not is_cluster:
+            redis_conn.select(db_number)
 
     @classmethod
     def get_decoder(cls, instance_alias: str = None) -> RedisValueDecoder:
@@ -87,15 +101,13 @@ class RedisPanelUtils:
 
         instance_config = instances[instance_alias]
 
-        # Handle different connection types (future: cluster, sentinel)
+        # Handle different connection types (cluster, single, sentinel)
         connection_type = instance_config.get("type", "single")
 
-        if connection_type == "single":
-            return cls._create_single_connection(instance_config)
-        # Future: elif connection_type == "cluster":
-        #     return cls._create_cluster_connection(instance_config)
+        if connection_type == "cluster":
+            return cls._create_cluster_connection(instance_config)
         else:
-            raise ValueError(f"Unsupported Redis connection type: {connection_type}")
+            return cls._create_single_connection(instance_config)
 
     @classmethod
     def _create_single_connection(cls, config: Dict[str, Any]) -> redis.Redis:
@@ -160,6 +172,80 @@ class RedisPanelUtils:
         return redis.Redis(**connection_params)
 
     @classmethod
+    def _create_cluster_connection(cls, config: Dict[str, Any]) -> RedisCluster:
+        """
+        Create a connection to a Redis Cluster.
+
+        Supports two configuration methods:
+        1. URL-based (recommended for ElastiCache and managed clusters - auto-discovers nodes)
+        2. startup_nodes (for self-managed clusters where you specify all nodes)
+        """
+        global_settings = cls.get_settings()
+
+        # Get timeout configuration for this instance or use global settings
+        socket_timeout = config.get(
+            "socket_timeout",
+            global_settings.get("socket_timeout", DEFAULT_SOCKET_TIMEOUT),
+        )
+        socket_connect_timeout = config.get(
+            "socket_connect_timeout",
+            global_settings.get(
+                "socket_connect_timeout", DEFAULT_SOCKET_CONNECT_TIMEOUT
+            ),
+        )
+
+        # Method 1: URL-based connection (ElastiCache, managed clusters)
+        # This auto-discovers all cluster nodes from the configuration endpoint
+        if "url" in config:
+            logger.debug("Creating Redis Cluster connection from URL")
+
+            cluster_kwargs = {
+                "decode_responses": False,
+                "skip_full_coverage_check": True,
+                "socket_timeout": socket_timeout,
+                "socket_connect_timeout": socket_connect_timeout,
+            }
+
+            # Handle SSL connections (rediss://)
+            if config["url"].startswith("rediss://"):
+                cluster_kwargs["ssl"] = True
+                # ElastiCache often requires relaxed SSL cert validation
+                if "ssl_cert_reqs" in config:
+                    cluster_kwargs["ssl_cert_reqs"] = config["ssl_cert_reqs"]
+
+            return RedisCluster.from_url(config["url"], **cluster_kwargs)
+
+        # Method 2: Explicit startup_nodes (self-managed clusters)
+        elif "startup_nodes" in config:
+            startup_nodes_config = config.get("startup_nodes", [])
+            if not startup_nodes_config:
+                raise ValueError("Redis cluster 'startup_nodes' cannot be empty")
+
+            # Convert dict nodes to ClusterNode objects
+            startup_nodes = [
+                ClusterNode(host=node["host"], port=node["port"])
+                for node in startup_nodes_config
+            ]
+
+            logger.debug(
+                f"Creating Redis Cluster connection with {len(startup_nodes)} startup nodes"
+            )
+
+            return RedisCluster(
+                startup_nodes=startup_nodes,
+                decode_responses=False,
+                skip_full_coverage_check=True,
+                socket_timeout=socket_timeout,
+                socket_connect_timeout=socket_connect_timeout,
+            )
+
+        else:
+            raise Exception(
+                "Redis cluster configuration requires either 'url' (for managed clusters like ElastiCache) "
+                "or 'startup_nodes' (for self-managed clusters)"
+            )
+
+    @classmethod
     def get_instance_meta_data(cls, instance_alias: str) -> Dict[str, Any]:
         """
         Ping a redis instance and return meta data about the instance.
@@ -169,24 +255,57 @@ class RedisPanelUtils:
             redis_conn = cls.get_redis_connection(instance_alias)
             redis_conn.ping()
             info = redis_conn.info()
+
+            # Check if this is a cluster
+            is_cluster = info.get("cluster_enabled", 0) == 1
+
             total_keys = 0
             databases = []
 
-            # Get all databases, their key counts and other info
-            for db_num in range(16):
-                db_key = f"db{db_num}"
-                if db_key in info:
-                    db_info = info[db_key]
-                    key_count = db_info.get("keys", 0)
-                    total_keys += key_count
-                    if key_count > 0 or db_num == 0:
-                        databases.append(
-                            {
-                                "db_number": db_num,
-                                "is_default": db_num == 0,
-                                **db_info,
-                            }
-                        )
+            if is_cluster:
+                try:
+                    total_keys = redis_conn.dbsize()
+                except Exception:
+                    total_keys = 0
+                databases = [
+                    {
+                        "db_number": 0,
+                        "is_default": True,
+                        "keys": total_keys,
+                        "expires": 0,
+                        "avg_ttl": 0,
+                    }
+                ]
+
+            else:
+                # Standard Redis instance - enumerate all databases
+                for db_num in range(16):
+                    db_key = f"db{db_num}"
+                    if db_key in info:
+                        db_info = info[db_key]
+                        key_count = db_info.get("keys", 0)
+                        total_keys += key_count
+                        if key_count > 0 or db_num == 0:
+                            databases.append(
+                                {
+                                    "db_number": db_num,
+                                    "is_default": db_num == 0,
+                                    **db_info,
+                                }
+                            )
+
+                # Ensure db0 is always present, even if it has no keys
+                if not any(db["db_number"] == 0 for db in databases):
+                    databases.insert(
+                        0,
+                        {
+                            "db_number": 0,
+                            "is_default": True,
+                            "keys": 0,
+                            "expires": 0,
+                            "avg_ttl": 0,
+                        },
+                    )
 
             hero_numbers = {
                 "version": info.get("redis_version", "Unknown"),
@@ -195,6 +314,7 @@ class RedisPanelUtils:
                 "connected_clients": info.get("connected_clients", 0),
                 "uptime": info.get("uptime_in_seconds", 0),
                 "total_commands_processed": info.get("total_commands_processed", 0),
+                "cluster_enabled": is_cluster,
             }
 
             return {
@@ -233,13 +353,40 @@ class RedisPanelUtils:
 
         Scans all matching keys first, then applies pagination.
         This ensures accurate pagination information and total counts.
+
+        WARNING: This method should NOT be used for Redis Clusters as it scans
+        all keys across all nodes, which is inefficient and can cause performance
+        issues. Use cursor_paginated_scan() for clusters instead.
         """
         try:
+            # Check if this is a cluster FIRST - refuse to do full scan on clusters
+            instances = cls.get_instances()
+            instance_config = instances.get(instance_alias, {})
+            is_cluster = instance_config.get("type") == "cluster"
+
+            if is_cluster:  # pragma: no cover
+                logger.error(
+                    f"paginated_scan called on cluster '{instance_alias}'. "
+                    "This is an anti-pattern! Use cursor_paginated_scan instead."
+                )
+                return {
+                    "keys": [],
+                    "keys_with_details": [],
+                    "total_keys": 0,
+                    "page": page,
+                    "per_page": per_page,
+                    "total_pages": 0,
+                    "has_more": False,
+                    "scan_complete": False,
+                    "limited_scan": False,
+                    "error": "Full scan not supported on clusters. Please use cursor pagination instead.",
+                }
+
             redis_conn = cls.get_redis_connection(instance_alias)
-            redis_conn.select(db_number)
+            cls._select_db_if_not_cluster(redis_conn, instance_alias, db_number)
             decoder = cls.get_decoder(instance_alias)
 
-            # Scan all matching keys
+            # Scan all matching keys (standalone Redis only)
             cursor = 0
             all_keys = []
             scan_iterations = 0
@@ -353,27 +500,68 @@ class RedisPanelUtils:
         we scan the keys in chunks of scan_count. This is much more
         efficient and should be used whenever the dataset is too
         large and paginated_scan() is too slow.
+
+        Note: For Redis Cluster, cursor pagination is simulated using scan_iter
+        since clusters don't have a single global cursor.
         """
         try:
+            # Ensure cursor is an integer (it might come as string from query params)
+            cursor = int(cursor) if cursor else 0
+
             redis_conn = cls.get_redis_connection(instance_alias)
-            redis_conn.select(db_number)
+            cls._select_db_if_not_cluster(redis_conn, instance_alias, db_number)
             decoder = cls.get_decoder(instance_alias)
 
-            # Use the provided cursor directly - no approximation needed
-            current_cursor = cursor
+            # Check if this is a cluster
+            instances = cls.get_instances()
+            instance_config = instances.get(instance_alias, {})
+            is_cluster = instance_config.get("type") == "cluster"
+
             page_keys = []
+            current_cursor = 0
 
-            # Set scan_count to per_page for better cursor pagination behavior
-            # This encourages Redis to return approximately the right number of keys per iteration
-            scan_count = per_page
+            if is_cluster:  # pragma: no cover
+                # For Redis Cluster, simulate cursor pagination with scan_iter
+                # Since clusters don't have a global cursor, we use scan_iter
+                # and skip/take based on the cursor value
+                try:
+                    keys_to_skip = cursor
+                    keys_collected = 0
 
-            # Perform one Redis SCAN iteration for this page
-            current_cursor, partial_keys = redis_conn.scan(
-                cursor=current_cursor, match=pattern, count=scan_count
-            )
+                    for key in redis_conn.scan_iter(match=pattern, count=per_page):
+                        if keys_to_skip > 0:
+                            keys_to_skip -= 1
+                            continue
 
-            # Filter keys from this scan iteration
-            page_keys = [k for k in partial_keys if k]
+                        page_keys.append(key)
+                        keys_collected += 1
+
+                        if keys_collected >= per_page:
+                            break
+
+                    # Next cursor is current position + keys collected
+                    current_cursor = (
+                        cursor + keys_collected if keys_collected > 0 else 0
+                    )
+
+                except Exception as e:
+                    logger.warning(f"Error during cluster scan_iter: {e}")
+                    current_cursor = 0
+            else:
+                # For standalone Redis, use traditional cursor-based scan
+                # Use the provided cursor directly - no approximation needed
+                current_cursor = cursor
+
+                # Set scan_count to per_page for better cursor pagination behavior
+                # This encourages Redis to return approximately the right number of keys per iteration
+                scan_count = per_page
+
+                # Perform one Redis SCAN iteration for this page
+                current_cursor, partial_keys = redis_conn.scan(
+                    cursor=current_cursor, match=pattern, count=scan_count
+                )
+                # Filter keys from this scan iteration
+                page_keys = [k for k in partial_keys if k]
 
             # Sort keys for consistent display
             page_keys.sort()
@@ -475,7 +663,7 @@ class RedisPanelUtils:
         """
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
-            redis_conn.select(db_number)
+            cls._select_db_if_not_cluster(redis_conn, instance_alias, db_number)
             decoder = cls.get_decoder(instance_alias)
 
             if not redis_conn.exists(key_name):
@@ -571,7 +759,7 @@ class RedisPanelUtils:
                 page = max(1, page or 1)  # Ensure page is at least 1
 
             redis_conn = cls.get_redis_connection(instance_alias)
-            redis_conn.select(db_number)
+            cls._select_db_if_not_cluster(redis_conn, instance_alias, db_number)
             decoder = cls.get_decoder(instance_alias)
 
             # Handle non-existent key
@@ -901,7 +1089,7 @@ class RedisPanelUtils:
         """
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
-            redis_conn.select(db_number)
+            cls._select_db_if_not_cluster(redis_conn, instance_alias, db_number)
             decoder = cls.get_decoder(instance_alias)
 
             # Check if key exists and is a list (or doesn't exist yet)
@@ -950,7 +1138,7 @@ class RedisPanelUtils:
         """
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
-            redis_conn.select(db_number)
+            cls._select_db_if_not_cluster(redis_conn, instance_alias, db_number)
             decoder = cls.get_decoder(instance_alias)
 
             # Check if key exists and is a set (or doesn't exist yet)
@@ -1014,7 +1202,7 @@ class RedisPanelUtils:
         """
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
-            redis_conn.select(db_number)
+            cls._select_db_if_not_cluster(redis_conn, instance_alias, db_number)
             decoder = cls.get_decoder(instance_alias)
 
             # Check if key exists and is a sorted set (or doesn't exist yet)
@@ -1073,7 +1261,7 @@ class RedisPanelUtils:
         """
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
-            redis_conn.select(db_number)
+            cls._select_db_if_not_cluster(redis_conn, instance_alias, db_number)
             decoder = cls.get_decoder(instance_alias)
 
             # Check if key exists and is a hash (or doesn't exist yet)
@@ -1126,7 +1314,7 @@ class RedisPanelUtils:
         """
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
-            redis_conn.select(db_number)
+            cls._select_db_if_not_cluster(redis_conn, instance_alias, db_number)
             decoder = cls.get_decoder(instance_alias)
 
             # Check if key exists and is a list
@@ -1177,7 +1365,7 @@ class RedisPanelUtils:
         """
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
-            redis_conn.select(db_number)
+            cls._select_db_if_not_cluster(redis_conn, instance_alias, db_number)
             decoder = cls.get_decoder(instance_alias)
 
             # Check if key exists and is a set
@@ -1219,7 +1407,7 @@ class RedisPanelUtils:
         """
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
-            redis_conn.select(db_number)
+            cls._select_db_if_not_cluster(redis_conn, instance_alias, db_number)
             decoder = cls.get_decoder(instance_alias)
 
             # Check if key exists and is a sorted set
@@ -1267,7 +1455,7 @@ class RedisPanelUtils:
         """
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
-            redis_conn.select(db_number)
+            cls._select_db_if_not_cluster(redis_conn, instance_alias, db_number)
             decoder = cls.get_decoder(instance_alias)
 
             # Check if key exists and is a hash
@@ -1314,7 +1502,7 @@ class RedisPanelUtils:
         """
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
-            redis_conn.select(db_number)
+            cls._select_db_if_not_cluster(redis_conn, instance_alias, db_number)
             decoder = cls.get_decoder(instance_alias)
 
             # Check if key exists and is a list
@@ -1365,7 +1553,7 @@ class RedisPanelUtils:
         """
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
-            redis_conn.select(db_number)
+            cls._select_db_if_not_cluster(redis_conn, instance_alias, db_number)
             decoder = cls.get_decoder(instance_alias)
 
             # Check if key exists and is a hash
@@ -1417,7 +1605,7 @@ class RedisPanelUtils:
         """
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
-            redis_conn.select(db_number)
+            cls._select_db_if_not_cluster(redis_conn, instance_alias, db_number)
             decoder = cls.get_decoder(instance_alias)
 
             # Check if key exists and is a string (or doesn't exist yet)
@@ -1462,7 +1650,7 @@ class RedisPanelUtils:
         """
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
-            redis_conn.select(db_number)
+            cls._select_db_if_not_cluster(redis_conn, instance_alias, db_number)
             decoder = cls.get_decoder(instance_alias)
 
             # Check if key exists and is a sorted set
@@ -1519,7 +1707,7 @@ class RedisPanelUtils:
         """
         try:
             redis_conn = cls.get_redis_connection(instance_alias)
-            redis_conn.select(db_number)
+            cls._select_db_if_not_cluster(redis_conn, instance_alias, db_number)
 
             # Check if key already exists
             if redis_conn.exists(key_name):

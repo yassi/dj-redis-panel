@@ -4,6 +4,7 @@ Tests for the Django Redis Panel collection member delete functionality.
 This module tests the ability to delete individual members from Redis collections
 (lists, sets, sorted sets, and hashes) through the key detail view.
 """
+import os
 import redis
 from django.urls import reverse
 from .base import RedisTestCase
@@ -79,7 +80,7 @@ class TestCollectionMemberDelete(RedisTestCase):
     def test_delete_list_item_disabled(self):
         """Test list item deletion when editing is disabled."""
         # Create key in test database 14 (no_features instance)
-        conn_14 = redis.Redis(host='127.0.0.1', port=6379, db=14, decode_responses=True)
+        conn_14 = redis.Redis(host=os.environ.get('REDIS_HOST', '127.0.0.1'), port=6379, db=14, decode_responses=True)
         list_key = 'test:delete_list_disabled'
         conn_14.rpush(list_key, 'item0', 'item1', 'item2')
         
@@ -145,7 +146,7 @@ class TestCollectionMemberDelete(RedisTestCase):
     def test_delete_set_member_disabled(self):
         """Test set member deletion when editing is disabled."""
         # Create key in test database 14 (no_features instance)
-        conn_14 = redis.Redis(host='127.0.0.1', port=6379, db=14, decode_responses=True)
+        conn_14 = redis.Redis(host=os.environ.get('REDIS_HOST', '127.0.0.1'), port=6379, db=14, decode_responses=True)
         set_key = 'test:delete_set_disabled'
         conn_14.sadd(set_key, 'member1', 'member2')
         
@@ -212,7 +213,7 @@ class TestCollectionMemberDelete(RedisTestCase):
     def test_delete_zset_member_disabled(self):
         """Test sorted set member deletion when editing is disabled."""
         # Create key in test database 14 (no_features instance)
-        conn_14 = redis.Redis(host='127.0.0.1', port=6379, db=14, decode_responses=True)
+        conn_14 = redis.Redis(host=os.environ.get('REDIS_HOST', '127.0.0.1'), port=6379, db=14, decode_responses=True)
         zset_key = 'test:delete_zset_disabled'
         conn_14.zadd(zset_key, {'member1': 1.0, 'member2': 2.0})
         
@@ -279,7 +280,7 @@ class TestCollectionMemberDelete(RedisTestCase):
     def test_delete_hash_field_disabled(self):
         """Test hash field deletion when editing is disabled."""
         # Create key in test database 14 (no_features instance)
-        conn_14 = redis.Redis(host='127.0.0.1', port=6379, db=14, decode_responses=True)
+        conn_14 = redis.Redis(host=os.environ.get('REDIS_HOST', '127.0.0.1'), port=6379, db=14, decode_responses=True)
         hash_key = 'test:delete_hash_disabled'
         conn_14.hset(hash_key, mapping={'field1': 'value1', 'field2': 'value2'})
         

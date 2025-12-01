@@ -211,6 +211,7 @@ underlying redis client (redis-py)
 | `encoder` | `"utf-8"` | Encoding to use for decoding/encoding Redis values |
 | `socket_timeout` | 5.0 | timeout for redis opertation after established connection |
 | `socket_connect_timeout` | 3.0 | timeout for initial connection to redis instance |
+| `type` | `single` | choose between cluster and standalone client types |
 
 
 ### Instance Configuration
@@ -218,6 +219,7 @@ underlying redis client (redis-py)
 Each Redis instance can be configured with:
 
 #### Connection via Host/Port:
+Almost certainly the most common scenario when testing your application locally
 ```python
 "instance_name": {
     "description": "Human-readable description",
@@ -233,12 +235,53 @@ Each Redis instance can be configured with:
 ```
 
 #### Connection via URL:
+Likely the most common scenario for most users - connecting to a standalone redis
+host with a single url
 ```python
 "instance_name": {
     "description": "Human-readable description", 
     "url": "redis://user:password@host:port",
     "socket_timeout": 1.0, # Optional: will use sane default
     "socket_connect_timeout": 1.0, # Optional: will use sane default
+    "features": {               # Optional: override global settings
+        "CURSOR_PAGINATED_SCAN": True,
+    },
+}
+```
+
+#### Connection to cluster via url:
+If your redis instance is operated as a cluster and you only have a url to connect with,
+you can connect using the `type:cluster` option like below. This type of situation is most
+common with managed redis services (e.g. redis from aws, digital ocean, etc.)
+```python
+"instance_name": {
+    "description": "Human-readable description", 
+    "url": "redis://user:password@host:port",
+    "socket_timeout": 1.0, # Optional: will use sane default
+    "socket_connect_timeout": 1.0, # Optional: will use sane default
+    "type": "cluster", # Optional: Connect using cluster client
+    "features": {               # Optional: override global settings
+        "CURSOR_PAGINATED_SCAN": True,
+    },
+}
+```
+
+#### Connection to cluster with known nodes:
+If you are running your own redis cluster and know the predefined hosts that compose
+your cluster, you can connect using the hostnames and ports of these nodes. This is
+almost certainly the least likely use case.
+```python
+"instance_name": {
+    "description": "Human-readable description", 
+    "url": "redis://user:password@host:port",
+    "socket_timeout": 1.0, # Optional: will use sane default
+    "socket_connect_timeout": 1.0, # Optional: will use sane default
+    "type": "cluster",
+    "startup_nodes": [
+        {"host": "127.0.0.1", "port": 6379},
+        {"host": "127.0.0.1", "port": 6379},
+        {"host": "127.0.0.1", "port": 6379},
+    ],
     "features": {               # Optional: override global settings
         "CURSOR_PAGINATED_SCAN": True,
     },
@@ -320,7 +363,7 @@ The project includes a comprehensive test suite. You can run them by using make 
 by invoking pytest directly:
 
 ```bash
-# build and install all dev dependencies and run all tests
+# build and install all dev dependencies and run all tests inside of docker container
 make test
 
 # Additionally generate coverage reports in multiple formats

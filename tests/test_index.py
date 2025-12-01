@@ -35,15 +35,16 @@ class TestIndexView(RedisTestCase):
         self.assertIn('redis_instances', response.context)
         redis_instances = response.context['redis_instances']
         
-        # Should have instances from test settings
-        self.assertEqual(len(redis_instances), 4)  # test_redis, test_redis_no_features, test_redis_url, test_redis_cursor
+        # Should have instances from test settings (4 standalone + 2 cluster)
+        self.assertEqual(len(redis_instances), 6)
         
         # Check instance structure
+        expected_aliases = ['test_redis', 'test_redis_no_features', 'test_redis_url', 'test_redis_cursor', 'test_cluster', 'test_cluster_url']
         for instance in redis_instances:
             self.assertIn('alias', instance)
             self.assertIn('config', instance)
             self.assertIn('status', instance)
-            self.assertIn(instance['alias'], ['test_redis', 'test_redis_no_features', 'test_redis_url', 'test_redis_cursor'])
+            self.assertIn(instance['alias'], expected_aliases)
             
             # For connected instances, check they have real data
             if instance['status'] == 'connected':
@@ -119,18 +120,19 @@ class TestIndexView(RedisTestCase):
         url = reverse('dj_redis_panel:index')
         response = self.client.get(url)
         
-        # Check all instances are present
+        # Check all instances are present (4 standalone + 2 cluster)
         redis_instances = response.context['redis_instances']
-        self.assertEqual(len(redis_instances), 4)
+        self.assertEqual(len(redis_instances), 6)
         
         # Check instance aliases are correct
         instance_aliases = {inst['alias'] for inst in redis_instances}
-        expected_aliases = {'test_redis', 'test_redis_no_features', 'test_redis_url', 'test_redis_cursor'}
+        expected_aliases = {'test_redis', 'test_redis_no_features', 'test_redis_url', 'test_redis_cursor', 'test_cluster', 'test_cluster_url'}
         self.assertEqual(instance_aliases, expected_aliases)
         
-        # Check that at least some instances are connected (those using test databases)
-        connected_instances = [inst for inst in redis_instances if inst['status'] == 'connected']
-        self.assertGreaterEqual(len(connected_instances), 2)  # test_redis and test_redis_no_features should connect
+        # Check that at least some standalone instances are connected
+        standalone_instances = [inst for inst in redis_instances if inst['alias'].startswith('test_redis')]
+        connected_standalone = [inst for inst in standalone_instances if inst['status'] == 'connected']
+        self.assertGreaterEqual(len(connected_standalone), 2)  # test_redis and test_redis_no_features should connect
     
     def test_index_view_no_instances_configured(self):
         """Test index view when no Redis instances are configured."""

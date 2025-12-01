@@ -17,12 +17,6 @@ Before setting up the development environment, make sure you have:
     ```bash
     # Install Python (if not already installed)
     brew install python@3.11
-    
-    # Install Redis
-    brew install redis
-    
-    # Start Redis
-    brew services start redis
     ```
 
 === "Ubuntu/Debian"
@@ -30,26 +24,12 @@ Before setting up the development environment, make sure you have:
     # Install Python and pip
     sudo apt update
     sudo apt install python3 python3-pip python3-venv
-    
-    # Install Redis
-    sudo apt install redis-server
-    
-    # Start Redis
-    sudo systemctl start redis-server
-    sudo systemctl enable redis-server
     ```
 
 === "CentOS/RHEL"
     ```bash
     # Install Python
-    sudo dnf install python3 python3-pip
-    
-    # Install Redis
-    sudo dnf install redis
-    
-    # Start Redis
-    sudo systemctl start redis
-    sudo systemctl enable redis
+    sudo dnf install python3 python3-pip    
     ```
 
 === "Docker"
@@ -76,6 +56,7 @@ Before setting up the development environment, make sure you have:
    ```
 
 ### 2. Create Virtual Environment
+If you want to work on your host machine using a virtualenv
 
 ```bash
 # Create virtual environment
@@ -92,52 +73,31 @@ The project includes a Makefile with several useful commands for development.
 ### Quick Setup
 
 ```bash
-# Install in development mode with all dependencies
-make install
-```
-
-This command will:
-- Build and install the package in development mode
-- Install all development dependencies (pytest, coverage, etc.)
-- Set up the package for local development
-
-### Manual Setup
-
-If you prefer manual installation:
-
-```bash
-# Install development dependencies
-pip install -e ".[dev]"
-
-# Or install from requirements
-pip install -r requirements.txt
-```
-
-### Available Make Commands
-
-```bash
-# Build and install the package
-make install
-
-# Run all tests
+# This will bring up all docker containers for this project and set up a dev
+# environment to run the example project in as well.
 make test
 
-# Run tests with coverage
-make test_coverage
+# then log into the dev environment with:
+make docker_shell
 
-# Clean build artifacts
-make clean
+# from the example project directory
+python manage.py runserver 0.0.0.0:8000
 
-# Build distribution packages
-make build
-
-# Upload to PyPI (maintainers only)
-make publish
-
-# Serve documentation locally
-make docs_serve
+# You can proceed to look at this project's /admin url
+# don't forget to setup a superuser as well
+python manage.py createsuperuser
 ```
+### Manual Setup
 
+If you prefer manual installation on the host machine
+
+```bash
+# Install dj-redis-panel into your environment
+pip install -e .
+
+# Install other development only packages
+pip install -r requirements.txt
+```
 ## Project Structure
 
 Understanding the project layout:
