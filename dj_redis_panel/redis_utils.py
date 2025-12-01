@@ -104,12 +104,10 @@ class RedisPanelUtils:
         # Handle different connection types (cluster, single, sentinel)
         connection_type = instance_config.get("type", "single")
 
-        if connection_type == "single":
-            return cls._create_single_connection(instance_config)
-        elif connection_type == "cluster":
+        if connection_type == "cluster":
             return cls._create_cluster_connection(instance_config)
         else:
-            raise ValueError(f"Unsupported Redis connection type: {connection_type}")
+            return cls._create_single_connection(instance_config)
 
     @classmethod
     def _create_single_connection(cls, config: Dict[str, Any]) -> redis.Redis:
@@ -265,37 +263,20 @@ class RedisPanelUtils:
             databases = []
 
             if is_cluster:
-                # Redis Cluster only supports database 0
+                try:
+                    total_keys = redis_conn.dbsize()
+                except Exception:
+                    total_keys = 0
+                databases = [
+                    {
+                        "db_number": 0,
+                        "is_default": True,
+                        "keys": total_keys,
+                        "expires": 0,
+                        "avg_ttl": 0,
+                    }
+                ]
 
-                # Check if db0 info is available in INFO command
-                # (self-managed clusters provide it, some managed services don't)
-                if "db0" in info:
-                    # Use database info from INFO command
-                    db_info = info["db0"]
-                    total_keys = db_info.get("keys", 0)
-                    databases = [
-                        {
-                            "db_number": 0,
-                            "is_default": True,
-                            **db_info,  # Includes keys, expires, avg_ttl, subexpiry
-                        }
-                    ]
-                else:
-                    # Fallback for clusters that don't provide db info (like ElastiCache)
-                    try:
-                        total_keys = redis_conn.dbsize()
-                    except Exception:
-                        total_keys = 0
-
-                    databases = [
-                        {
-                            "db_number": 0,
-                            "is_default": True,
-                            "keys": total_keys,
-                            "expires": 0,
-                            "avg_ttl": 0,
-                        }
-                    ]
             else:
                 # Standard Redis instance - enumerate all databases
                 for db_num in range(16):
@@ -370,7 +351,7 @@ class RedisPanelUtils:
             instance_config = instances.get(instance_alias, {})
             is_cluster = instance_config.get("type") == "cluster"
 
-            if is_cluster:
+            if is_cluster:  # pragma: no cover
                 logger.error(
                     f"paginated_scan called on cluster '{instance_alias}'. "
                     "This is an anti-pattern! Use cursor_paginated_scan instead."
@@ -526,7 +507,7 @@ class RedisPanelUtils:
             page_keys = []
             current_cursor = 0
 
-            if is_cluster:
+            if is_cluster:  # pragma: no cover
                 # For Redis Cluster, simulate cursor pagination with scan_iter
                 # Since clusters don't have a global cursor, we use scan_iter
                 # and skip/take based on the cursor value

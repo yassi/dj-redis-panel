@@ -211,7 +211,7 @@ underlying redis client (redis-py)
 | `encoder` | `"utf-8"` | Encoding to use for decoding/encoding Redis values |
 | `socket_timeout` | 5.0 | timeout for redis opertation after established connection |
 | `socket_connect_timeout` | 3.0 | timeout for initial connection to redis instance |
-| `type` | `cluster` | choose between cluster and standalone client types |
+| `type` | `single` | choose between cluster and standalone client types |
 
 
 ### Instance Configuration
