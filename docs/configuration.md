@@ -36,6 +36,9 @@ These settings apply to all Redis instances unless overridden at the instance le
 | `encoder` | `"utf-8"` | Encoding to use for decoding/encoding Redis values |
 | `socket_timeout` | `5.0` | Socket timeout in seconds for Redis operations |
 | `socket_connect_timeout` | `3.0` | Connection timeout in seconds for establishing Redis connections |
+| `type` | None | Decides whether to use cluster or standalone connections |
+
+NOTE: settings that are capatalized (e.g. `ALLOW_KEY_DELETE`) are feature flags. Other lower case options are typically config settings usually related redis connections and clients
 
 ### Feature Flags Details
 
