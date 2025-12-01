@@ -1057,8 +1057,14 @@
 <td><code>3.0</code></td>
 <td>Connection timeout in seconds for establishing Redis connections</td>
 </tr>
+<tr>
+<td><code>type</code></td>
+<td><code>single</code></td>
+<td>Decides whether to use cluster or standalone connections</td>
+</tr>
 </tbody>
 </table>
+<p>NOTE: settings that are capatalized (e.g. <code>ALLOW_KEY_DELETE</code>) are feature flags. Other lower case options are typically config settings usually related redis connections and clients</p>
 <h3 id="feature-flags-details">Feature Flags Details</h3>
 <h4 id="allow_key_delete"><code>ALLOW_KEY_DELETE</code></h4>
 <p>Controls whether users can delete Redis keys through the interface.</p>
