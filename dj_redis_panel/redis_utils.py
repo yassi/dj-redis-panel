@@ -294,6 +294,19 @@ class RedisPanelUtils:
                                 }
                             )
 
+                # Ensure db0 is always present, even if it has no keys
+                if not any(db["db_number"] == 0 for db in databases):
+                    databases.insert(
+                        0,
+                        {
+                            "db_number": 0,
+                            "is_default": True,
+                            "keys": 0,
+                            "expires": 0,
+                            "avg_ttl": 0,
+                        },
+                    )
+
             hero_numbers = {
                 "version": info.get("redis_version", "Unknown"),
                 "memory_used": info.get("used_memory_human", "Unknown"),

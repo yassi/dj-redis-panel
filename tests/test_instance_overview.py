@@ -298,7 +298,7 @@ class TestInstanceOverviewView(RedisTestCase):
         response = self.client.get(url)
         
         # Should still work, but database 15 might not appear in the list
-        # (Redis only shows databases with keys or DB 0)
+        # (Redis only shows databases with keys, except DB 0 which is always shown)
         self.assertEqual(response.status_code, 200)
         
         databases = response.context['databases']
@@ -307,6 +307,38 @@ class TestInstanceOverviewView(RedisTestCase):
         if db15:
             # If DB 15 appears, it should have 0 keys
             self.assertEqual(db15['keys'], 0)
+    
+    def test_instance_overview_always_shows_db0(self):
+        """Test that database 0 is always shown even when there are no keys at all."""
+        # Clean all test databases completely
+        import redis
+        redis_host = os.environ.get('REDIS_HOST', '127.0.0.1')
+        for db_num in range(16):
+            test_conn = redis.Redis(host=redis_host, port=6379, db=db_num, decode_responses=True)
+            try:
+                test_conn.flushdb()
+            except Exception:
+                pass  # Ignore any errors
+        
+        url = reverse('dj_redis_panel:instance_overview', args=['test_redis'])
+        response = self.client.get(url)
+        
+        # Should still work
+        self.assertEqual(response.status_code, 200)
+        
+        # Database 0 should always be present
+        databases = response.context['databases']
+        self.assertGreater(len(databases), 0, "At least one database (db0) should be shown")
+        
+        db0 = next((db for db in databases if db['db_number'] == 0), None)
+        self.assertIsNotNone(db0, "Database 0 should always be present")
+        self.assertEqual(db0['keys'], 0, "Database 0 should have 0 keys")
+        self.assertTrue(db0['is_default'], "Database 0 should be marked as default")
+        
+        # Verify the Browse Keys link is present for db0 even with no keys
+        expected_search_url = reverse('dj_redis_panel:key_search', args=['test_redis', 0])
+        self.assertContains(response, f'href="{expected_search_url}"', 
+                          msg_prefix="Browse Keys link should be present for db0 even with no keys")
     
     def test_instance_overview_template_content(self):
         """Test that instance overview template contains expected content."""
@@ -324,14 +356,13 @@ class TestInstanceOverviewView(RedisTestCase):
         # Check for databases section
         self.assertContains(response, 'Database')
         
-        # Should contain links to key search for databases with keys
+        # Should contain links to key search for all databases (even those with no keys)
         databases = response.context['databases']
         for db in databases:
-            if db['keys'] > 0:
-                expected_search_url = reverse('dj_redis_panel:key_search', 
-                                            args=['test_redis', db['db_number']])
-                # The URL should appear in the response (as a link)
-                self.assertContains(response, f'href="{expected_search_url}"')
+            expected_search_url = reverse('dj_redis_panel:key_search', 
+                                        args=['test_redis', db['db_number']])
+            # The URL should appear in the response (as a link)
+            self.assertContains(response, f'href="{expected_search_url}"')
     
     def test_instance_overview_different_instances(self):
         """Test instance overview with different instance configurations."""

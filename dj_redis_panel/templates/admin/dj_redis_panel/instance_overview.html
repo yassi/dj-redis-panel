@@ -110,13 +110,9 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if db.keys > 0 %}
-                                <a href="{% url 'dj_redis_panel:key_search' instance_alias db.db_number %}" class="default">
-                                    {% trans 'Browse Keys' %}
-                                </a>
-                            {% else %}
-                                <span class="quiet">{% trans 'No keys' %}</span>
-                            {% endif %}
+                            <a href="{% url 'dj_redis_panel:key_search' instance_alias db.db_number %}" class="default">
+                                {% trans 'Browse Keys' %}
+                            </a>
                         </td>
                     </tr>
                     {% endfor %}
