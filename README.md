@@ -140,6 +140,10 @@ DJ_REDIS_PANEL_SETTINGS = {
     "CURSOR_PAGINATED_SCAN": False,
     "CURSOR_PAGINATED_COLLECTIONS": False,
     
+    # Limits for page-based pagination (only applies when CURSOR_PAGINATED_SCAN is False)
+    "MAX_KEYS_PAGINATED_SCAN": 100000,  # Maximum keys to collect in memory
+    "MAX_SCAN_ITERATIONS": 2000,  # Maximum Redis SCAN iterations
+    
     "INSTANCES": {
         "default": {
             "description": "Default Redis Instance",
@@ -208,11 +212,26 @@ underlying redis client (redis-py)
 | `ALLOW_TTL_UPDATE` | `True` | Allow updating key TTL (expiration) |
 | `CURSOR_PAGINATED_SCAN` | `False` | Use cursor-based pagination instead of page-based |
 | `CURSOR_PAGINATED_COLLECTIONS` | `False` | Use cursor based pagination for key values like lists and hashs |
+| `MAX_KEYS_PAGINATED_SCAN` | `100000` | Maximum number of keys to collect during page-based pagination. Only applies when `CURSOR_PAGINATED_SCAN` is `False`. Prevents memory issues with large datasets. |
+| `MAX_SCAN_ITERATIONS` | `2000` | Maximum number of Redis SCAN iterations during page-based pagination. Only applies when `CURSOR_PAGINATED_SCAN` is `False`. Prevents infinite loops and excessive operations. |
 | `encoder` | `"utf-8"` | Encoding to use for decoding/encoding Redis values |
 | `socket_timeout` | 5.0 | timeout for redis opertation after established connection |
 | `socket_connect_timeout` | 3.0 | timeout for initial connection to redis instance |
 | `type` | `single` | choose between cluster and standalone client types |
 
+### Important Notes on Pagination Settings
+
+**For databases with more than 100,000 keys**, it's strongly recommended to use **cursor-based pagination** (`CURSOR_PAGINATED_SCAN: True`) instead of increasing `MAX_KEYS_PAGINATED_SCAN`. Cursor-based pagination:
+- Doesn't load all keys into memory at once
+- Is more efficient for large datasets
+- Provides better performance and stability
+
+**Page-based pagination** (when `CURSOR_PAGINATED_SCAN` is `False`) scans all matching keys into memory before paginating, which can cause:
+- High memory usage with large key counts
+- Slower response times
+- Potential timeouts
+
+The `MAX_KEYS_PAGINATED_SCAN` and `MAX_SCAN_ITERATIONS` settings are safety limits to prevent these issues. If you're hitting these limits, switch to cursor-based pagination instead of increasing them.
 
 ### Instance Configuration
 
@@ -231,6 +250,9 @@ Almost certainly the most common scenario when testing your application locally
     "features": {               # Optional: override global settings
         "ALLOW_KEY_DELETE": True,
     },
+    # Optional: override pagination limits for this instance
+    "MAX_KEYS_PAGINATED_SCAN": 200000,
+    "MAX_SCAN_ITERATIONS": 5000,
 }
 ```
 
