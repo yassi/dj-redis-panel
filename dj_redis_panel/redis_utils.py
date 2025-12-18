@@ -88,6 +88,62 @@ class RedisPanelUtils:
         return bool(panel_settings.get(feature_name, False))
 
     @classmethod
+    def get_max_keys_paginated_scan(cls, instance_alias: str) -> int:
+        """
+        Get the maximum number of keys to collect during paginated_scan.
+
+        Priority order:
+        1. Instance-specific setting
+        2. Global setting
+        3. Default 100000
+
+        This limit prevents memory issues when scanning large datasets.
+        Users with more keys should use CURSOR_PAGINATED_SCAN instead.
+        """
+        instances = cls.get_instances()
+        panel_settings = cls.get_settings()
+
+        # Default value
+        default_max_keys = 100000
+
+        # Check for instance-specific setting
+        if instance_alias in instances:
+            instance_config = instances[instance_alias]
+            if "MAX_KEYS_PAGINATED_SCAN" in instance_config:
+                return int(instance_config["MAX_KEYS_PAGINATED_SCAN"])
+
+        # Fall back to global setting
+        return int(panel_settings.get("MAX_KEYS_PAGINATED_SCAN", default_max_keys))
+
+    @classmethod
+    def get_max_scan_iterations(cls, instance_alias: str) -> int:
+        """
+        Get the maximum number of SCAN iterations during paginated_scan.
+
+        Priority order:
+        1. Instance-specific setting
+        2. Global setting
+        3. Default 2000
+
+        This limit prevents infinite loops and excessive Redis operations.
+        Users with more keys should use CURSOR_PAGINATED_SCAN instead.
+        """
+        instances = cls.get_instances()
+        panel_settings = cls.get_settings()
+
+        # Default value
+        default_max_iterations = 2000
+
+        # Check for instance-specific setting
+        if instance_alias in instances:
+            instance_config = instances[instance_alias]
+            if "MAX_SCAN_ITERATIONS" in instance_config:
+                return int(instance_config["MAX_SCAN_ITERATIONS"])
+
+        # Fall back to global setting
+        return int(panel_settings.get("MAX_SCAN_ITERATIONS", default_max_iterations))
+
+    @classmethod
     def get_redis_connection(cls, instance_alias: str) -> redis.Redis:
         """
         Create a direct Redis connection for the specified instance.
@@ -386,11 +442,14 @@ class RedisPanelUtils:
             cls._select_db_if_not_cluster(redis_conn, instance_alias, db_number)
             decoder = cls.get_decoder(instance_alias)
 
+            # Get configurable limits for this instance
+            max_keys = cls.get_max_keys_paginated_scan(instance_alias)
+            max_scan_iterations = cls.get_max_scan_iterations(instance_alias)
+
             # Scan all matching keys (standalone Redis only)
             cursor = 0
             all_keys = []
             scan_iterations = 0
-            max_scan_iterations = 2000  # Prevent infinite loops
 
             while scan_iterations < max_scan_iterations:
                 cursor, partial_keys = redis_conn.scan(
@@ -403,7 +462,7 @@ class RedisPanelUtils:
                     break
 
                 # Safety limit to prevent memory issues with very large datasets
-                if len(all_keys) >= 100000:
+                if len(all_keys) >= max_keys:
                     break
 
             # Sort keys for consistent pagination
@@ -453,6 +512,11 @@ class RedisPanelUtils:
                     # Skip keys that can't be processed
                     continue
 
+            # Check if we hit the configured limits
+            max_keys = cls.get_max_keys_paginated_scan(instance_alias)
+            hit_key_limit = len(all_keys) >= max_keys
+            hit_iteration_limit = scan_iterations >= max_scan_iterations
+
             return {
                 "keys": [decoder.decode_value(key) for key in page_keys],
                 "keys_with_details": keys_with_details,
@@ -462,7 +526,7 @@ class RedisPanelUtils:
                 "total_pages": total_pages,
                 "has_more": page < total_pages,
                 "scan_complete": cursor == 0,
-                "limited_scan": len(all_keys) >= 100000,
+                "limited_scan": hit_key_limit or hit_iteration_limit,
                 "error": None,
             }
 

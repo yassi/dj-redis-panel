@@ -12,7 +12,8 @@ help:
 	@echo "  make uninstall       		Uninstall package"
 	@echo "  make uninstall_all   		Uninstall all packages"
 	@echo "  make test_install    		Check if package can be imported"
-	@echo "  make test            		Run tests inside Docker dev container"
+	@echo "  make test_local            Run tests on host machine. No cluster tests."
+	@echo "  make test_docker            Run tests inside Docker dev container. No cluster tests."
 	@echo "  make test_cluster    		Run cluster tests inside Docker dev container"
 	@echo "  make test_all        		Run all tests inside Docker dev container"
 	@echo "  make populate_cluster		Populate Redis cluster with test data"
@@ -54,7 +55,16 @@ test_install: build
 	python -m pip install -e .
 	python -c "import dj_redis_panel; print('✅ Import success!')"
 
-test:
+test_local:
+	@echo "Starting Docker services..."
+	docker compose up -d
+	@echo "Waiting for services to be ready..."
+	@sleep 3
+	@echo "Running tests (excluding cluster tests) in host machine..."
+	@python -m pytest tests/ -m 'not cluster' -v
+	@echo "✅ Tests completed"
+
+test_docker:
 	@echo "Starting Docker services..."
 	docker compose up -d
 	@echo "Waiting for services to be ready..."
