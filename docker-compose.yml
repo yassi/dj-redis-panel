@@ -11,6 +11,7 @@ services:
       - "8000:8000"
     volumes:
       - .:/app
+      - ./ssl-certs:/ssl-certs:ro
     working_dir: /app/example_project
     tty: true
     stdin_open: true
@@ -28,12 +29,17 @@ services:
       - "6379:6379"
 
   # Redis Cluster nodes (3 masters, no replicas for testing)
+  # Supports both non-SSL (6379) and SSL (6380) connections
   redis-node-0:
     image: redis:7
     ports:
       - "9000:6379"
+      - "9100:6380"
       - "17000:16379"
-    command: redis-server --port 6379 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes
+    volumes:
+      - ./ssl-certs:/ssl-certs:ro
+    command: >
+      redis-server  --port 6379 --tls-port 6380 --cluster-enabled yes  --cluster-config-file nodes.conf  --cluster-node-timeout 5000  --appendonly yes --tls-cert-file /ssl-certs/redis.crt --tls-key-file /ssl-certs/redis.key --tls-ca-cert-file /ssl-certs/ca.crt --tls-auth-clients no
     networks:
       - redis-cluster
 
@@ -41,8 +47,12 @@ services:
     image: redis:7
     ports:
       - "9001:6379"
+      - "9101:6380"
       - "17001:16379"
-    command: redis-server --port 6379 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes
+    volumes:
+      - ./ssl-certs:/ssl-certs:ro
+    command: >
+      redis-server  --port 6379 --tls-port 6380 --cluster-enabled yes  --cluster-config-file nodes.conf  --cluster-node-timeout 5000  --appendonly yes --tls-cert-file /ssl-certs/redis.crt --tls-key-file /ssl-certs/redis.key --tls-ca-cert-file /ssl-certs/ca.crt --tls-auth-clients no
     networks:
       - redis-cluster
 
@@ -50,8 +60,12 @@ services:
     image: redis:7
     ports:
       - "9002:6379"
+      - "9102:6380"
       - "17002:16379"
-    command: redis-server --port 6379 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes
+    volumes:
+      - ./ssl-certs:/ssl-certs:ro
+    command: >
+      redis-server  --port 6379 --tls-port 6380 --cluster-enabled yes  --cluster-config-file nodes.conf  --cluster-node-timeout 5000  --appendonly yes --tls-cert-file /ssl-certs/redis.crt --tls-key-file /ssl-certs/redis.key --tls-ca-cert-file /ssl-certs/ca.crt --tls-auth-clients no
     networks:
       - redis-cluster
 
