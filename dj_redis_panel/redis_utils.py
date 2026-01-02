@@ -263,11 +263,15 @@ class RedisPanelUtils:
             }
 
             # Handle SSL connections (rediss://)
-            # Note that the cluster client will automatically use ssl if the url starts with rediss://
+            # The from_url method automatically handles SSL from the URL scheme
+            # Only add SSL parameters if explicitly provided (important for ElastiCache)
             if config["url"].startswith("rediss://"):
                 # ElastiCache often requires relaxed SSL cert validation
                 if "ssl_cert_reqs" in config:
                     cluster_kwargs["ssl_cert_reqs"] = config["ssl_cert_reqs"]
+                # Support custom CA certificates if provided
+                if "ssl_ca_certs" in config:
+                    cluster_kwargs["ssl_ca_certs"] = config["ssl_ca_certs"]
 
             return RedisCluster.from_url(config["url"], **cluster_kwargs)
 
