@@ -239,9 +239,9 @@ dj_redis_panel_settings_using_docker = {
             },
         },
         "redis-cluster-ssl": {
-            "description": "Redis Cluster using URL with SSL/TLS (same cluster, TLS port)",
+            "description": "Redis Cluster with SSL/TLS (SSL-enabled nodes, TLS port)",
             "type": "cluster",
-            "url": "rediss://redis-node-0:6380",
+            "url": "rediss://redis-node-0-ssl:6380",
             "ssl_cert_reqs": None,  # Disable cert verification like ElastiCache
             "features": {
                 "ALLOW_KEY_DELETE": True,

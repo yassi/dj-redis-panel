@@ -404,3 +404,37 @@ redis instances.
 # Start Redis on localhost and the usual port 6379
 docker-compose up redis -d
 ```
+
+### 9. SSL/TLS Cluster Testing (Optional)
+
+The project supports testing with SSL-enabled Redis clusters to validate compatibility with managed services like AWS ElastiCache.
+
+**Default behavior**: The Redis cluster runs without SSL - no certificates needed.
+
+**To test SSL/TLS connections**:
+
+```bash
+# 1. Generate SSL certificates (one-time setup)
+make generate_ssl_certs
+
+# 2. Start SSL-enabled cluster (alongside non-SSL cluster)
+make docker_up_all
+
+# 3. Verify SSL connection works
+docker compose exec redis-node-0-ssl redis-cli -c -p 6380 --tls --insecure cluster info
+```
+
+The SSL cluster adds a **redis-cluster-ssl** instance in Django admin that uses the `rediss://` protocol, simulating ElastiCache SSL connections.
+
+**Port Mappings:**
+- Non-SSL Cluster: `localhost:9000-9002`
+- SSL Cluster (non-SSL): `localhost:9100-9102`
+- SSL Cluster (TLS): `localhost:9110-9112`
+
+**Available Commands:**
+- `make docker_up` - Start non-SSL cluster only
+- `make docker_up_ssl` - Start SSL cluster only  
+- `make docker_up_all` - Start both clusters
+- `make docker_down` - Stop all clusters
+
+For detailed SSL setup instructions, see [docs/ssl-cluster-setup.md](docs/ssl-cluster-setup.md).

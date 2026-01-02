@@ -185,6 +185,64 @@ python manage.py runserver
 
 Visit `http://127.0.0.1:8000/admin/` to access the Django admin with Redis Panel.
 
+## SSL/TLS Cluster Testing (Optional)
+
+By default, the Redis cluster runs without SSL. To test SSL/TLS connections (e.g., for AWS ElastiCache compatibility):
+
+### 1. Generate SSL Certificates
+
+```bash
+# Generate certificates using mkcert (recommended) or openssl
+make generate_ssl_certs
+```
+
+This creates certificates in the `ssl-certs/` directory. You only need to do this once.
+
+### 2. Start Clusters
+
+You can run the SSL cluster alone or alongside the non-SSL cluster:
+
+```bash
+# Option A: Start both clusters simultaneously (recommended for testing)
+make docker_up_all
+
+# Option B: Start SSL cluster only
+make docker_up_ssl
+
+# Option C: Start non-SSL cluster only (default)
+make docker_up
+```
+
+### 3. Verify Connections
+
+```bash
+# Non-SSL cluster (ports 9000-9002)
+docker compose exec redis-node-0 redis-cli -c -p 6379 cluster info
+
+# SSL cluster non-SSL port (ports 9100-9102)
+docker compose exec redis-node-0-ssl redis-cli -c -p 6379 cluster info
+
+# SSL cluster SSL port (ports 9110-9112)
+docker compose exec redis-node-0-ssl redis-cli -c -p 6380 \
+  --tls --insecure cluster info
+```
+
+### 4. Test in Django Admin
+
+When running with SSL, you'll see these cluster instances:
+- **redis-cluster**: Non-SSL connection (ports 9000-9002)
+- **redis-cluster-url**: Non-SSL URL connection
+- **redis-cluster-ssl**: SSL/TLS connection using `rediss://` protocol (ports 9110-9112)
+
+### Stop All Clusters
+
+```bash
+make docker_down
+```
+
+**Note**: SSL testing is completely optional. All tests and development work without SSL certificates.
+
+For detailed SSL setup instructions, see [SSL Cluster Setup Guide](ssl-cluster-setup.md).
 
 ## Documentation Development
 
