@@ -23,7 +23,10 @@ help:
 	@echo "  make docs            		Build documentation"
 	@echo "  make docs_serve      		Serve documentation locally"
 	@echo "  make docs_push       		Deploy documentation to GitHub Pages"
-	@echo "  make docker_up       		Start all Docker services (dev, Redis, cluster)"
+	@echo "  make generate_ssl_certs	Generate SSL certificates for cluster testing"
+	@echo "  make docker_up       		Start non-SSL Docker services (dev, Redis, cluster)"
+	@echo "  make docker_up_ssl   		Start SSL-enabled cluster alongside non-SSL services"
+	@echo "  make docker_up_all   		Start ALL services (non-SSL + SSL clusters)"
 	@echo "  make docker_down     		Stop all Docker services and clean volumes"
 	@echo "  make docker_shell    		Open shell in dev container"
 
@@ -116,24 +119,62 @@ docs_serve: docs
 docs_push: docs
 	mkdocs gh-deploy --force
 
+# SSL certificate generation
+generate_ssl_certs:
+	@echo "Generating SSL certificates..."
+	@./scripts/generate-ssl-certs.sh
+	@echo "✅ SSL certificates generated successfully"
+
 # Docker targets
 docker_up:
-	@echo "Starting all Docker services..."
+	@echo "Starting non-SSL Docker services..."
 	@docker compose up -d
 	@echo "Waiting for cluster to initialize..."
+	@sleep 10
+	@echo "✅ Non-SSL services are running:"
+	@echo "   Dev container: dj-redis-panel-dev-1"
+	@echo "   Standalone Redis: localhost:6379"
+	@echo "   Cluster Node 0 (non-SSL): localhost:9000"
+	@echo "   Cluster Node 1 (non-SSL): localhost:9001"
+	@echo "   Cluster Node 2 (non-SSL): localhost:9002"
+	@echo ""
+	@echo "Run 'make docker_shell' to open a shell in the dev container"
+	@echo "Run 'make docker_up_ssl' to also start SSL-enabled cluster"
+
+docker_up_ssl:
+	@echo "Starting SSL-enabled cluster..."
+	@docker compose --profile ssl up -d
+	@echo "Waiting for SSL cluster to initialize..."
+	@sleep 10
+	@echo "✅ SSL cluster is running:"
+	@echo "   Cluster Node 0 (SSL): localhost:9100 (non-SSL), localhost:9110 (SSL)"
+	@echo "   Cluster Node 1 (SSL): localhost:9101 (non-SSL), localhost:9111 (SSL)"
+	@echo "   Cluster Node 2 (SSL): localhost:9102 (non-SSL), localhost:9112 (SSL)"
+
+docker_up_all:
+	@echo "Starting ALL Docker services (non-SSL + SSL clusters)..."
+	@docker compose --profile all up -d
+	@echo "Waiting for clusters to initialize..."
 	@sleep 10
 	@echo "✅ All services are running:"
 	@echo "   Dev container: dj-redis-panel-dev-1"
 	@echo "   Standalone Redis: localhost:6379"
-	@echo "   Cluster Node 0: localhost:7000"
-	@echo "   Cluster Node 1: localhost:7001"
-	@echo "   Cluster Node 2: localhost:7002"
+	@echo ""
+	@echo "   Non-SSL Cluster:"
+	@echo "     Node 0: localhost:9000"
+	@echo "     Node 1: localhost:9001"
+	@echo "     Node 2: localhost:9002"
+	@echo ""
+	@echo "   SSL Cluster:"
+	@echo "     Node 0: localhost:9100 (non-SSL), localhost:9110 (SSL)"
+	@echo "     Node 1: localhost:9101 (non-SSL), localhost:9111 (SSL)"
+	@echo "     Node 2: localhost:9102 (non-SSL), localhost:9112 (SSL)"
 	@echo ""
 	@echo "Run 'make docker_shell' to open a shell in the dev container"
 
 docker_down:
 	@echo "Stopping all Docker services and cleaning volumes..."
-	@docker compose down -v
+	@docker compose --profile all down -v
 	@echo "✅ All services stopped and volumes cleaned"
 
 docker_shell:

@@ -227,6 +227,7 @@ dj_redis_panel_settings_using_docker = {
         "redis-cluster-url": {
             "description": "Redis Cluster (URL method - mimic elasticache style url for testing)",
             "type": "cluster",
+            "ssl_cert_reqs": None,  # Often needed for ElastiCache SSL
             # Point to any node - RedisCluster will auto-discover all nodes
             "url": "redis://redis-node-0:6379",
             "features": {
@@ -237,7 +238,19 @@ dj_redis_panel_settings_using_docker = {
                 "CURSOR_PAGINATED_COLLECTIONS": True,
             },
         },
-        # Example: ElastiCache Cluster Mode Enabled
+        "redis-cluster-ssl": {
+            "description": "Redis Cluster with SSL/TLS (SSL-enabled nodes, TLS port)",
+            "type": "cluster",
+            "url": "rediss://redis-node-0-ssl:6380",
+            "ssl_cert_reqs": None,  # Disable cert verification like ElastiCache
+            "features": {
+                "ALLOW_KEY_DELETE": True,
+                "ALLOW_KEY_EDIT": True,
+                "ALLOW_TTL_UPDATE": True,
+                "CURSOR_PAGINATED_SCAN": True,
+                "CURSOR_PAGINATED_COLLECTIONS": True,
+            },
+        },  # Example: ElastiCache Cluster Mode Enabled
         # "elasticache-cluster": {
         #     "description": "AWS ElastiCache Redis Cluster (for actually testing your own elasticache cluster)",
         #     "type": "cluster",  # Required for cluster mode

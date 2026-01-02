@@ -11,6 +11,7 @@ services:
       - "8000:8000"
     volumes:
       - .:/app
+      - ./ssl-certs:/ssl-certs:ro
     working_dir: /app/example_project
     tty: true
     stdin_open: true
@@ -27,7 +28,13 @@ services:
     ports:
       - "6379:6379"
 
-  # Redis Cluster nodes (3 masters, no replicas for testing)
+  # ============================================
+  # Redis Cluster (Non-SSL)
+  # ============================================
+  # These nodes run without SSL
+  # Start: docker compose up -d
+  # Start with SSL: docker compose --profile all up -d
+
   redis-node-0:
     image: redis:7
     ports:
@@ -55,7 +62,7 @@ services:
     networks:
       - redis-cluster
 
-  # Cluster initialization
+  # Cluster initialization (non-SSL)
   redis-cluster-init:
     image: redis:7
     depends_on:
@@ -65,7 +72,80 @@ services:
     networks:
       - redis-cluster
     command: >
-      bash -c "sleep 5 && redis-cli --cluster create  redis-node-0:6379 redis-node-1:6379 redis-node-2:6379  --cluster-replicas 0 --cluster-yes || true"
+      bash -c "sleep 5 && redis-cli --cluster create redis-node-0:6379 redis-node-1:6379 redis-node-2:6379 --cluster-replicas 0 --cluster-yes || true"
+
+  # ============================================
+  # Redis Cluster WITH SSL ("ssl" or "all" profile)
+  # ============================================
+  # These nodes support both SSL (6380) and non-SSL (6379) connections
+  # Requires SSL certificates in ./ssl-certs/
+  # Generate with: make generate_ssl_certs
+  # Start SSL only: docker compose --profile ssl up -d
+  # Start both clusters: docker compose --profile all up -d
+  # Ports 9100-9102: non-SSL, 9110-9112: SSL
+
+  redis-node-0-ssl:
+    image: redis:7
+    ports:
+      - "9100:6379"
+      - "9110:6380"
+      - "17100:16379"
+    volumes:
+      - ./ssl-certs:/ssl-certs:ro
+    command: >
+      redis-server  --port 6379  --tls-port 6380  --cluster-enabled yes  --cluster-config-file nodes-ssl.conf  --cluster-node-timeout 5000  --appendonly yes  --tls-cert-file /ssl-certs/redis.crt  --tls-key-file /ssl-certs/redis.key  --tls-ca-cert-file /ssl-certs/ca.crt  --tls-auth-clients no
+    networks:
+      - redis-cluster
+    profiles:
+      - ssl
+      - all
+
+  redis-node-1-ssl:
+    image: redis:7
+    ports:
+      - "9101:6379"
+      - "9111:6380"
+      - "17101:16379"
+    volumes:
+      - ./ssl-certs:/ssl-certs:ro
+    command: >
+      redis-server  --port 6379  --tls-port 6380  --cluster-enabled yes  --cluster-config-file nodes-ssl.conf  --cluster-node-timeout 5000  --appendonly yes  --tls-cert-file /ssl-certs/redis.crt  --tls-key-file /ssl-certs/redis.key  --tls-ca-cert-file /ssl-certs/ca.crt  --tls-auth-clients no
+    networks:
+      - redis-cluster
+    profiles:
+      - ssl
+      - all
+
+  redis-node-2-ssl:
+    image: redis:7
+    ports:
+      - "9102:6379"
+      - "9112:6380"
+      - "17102:16379"
+    volumes:
+      - ./ssl-certs:/ssl-certs:ro
+    command: >
+      redis-server  --port 6379  --tls-port 6380  --cluster-enabled yes  --cluster-config-file nodes-ssl.conf  --cluster-node-timeout 5000  --appendonly yes  --tls-cert-file /ssl-certs/redis.crt  --tls-key-file /ssl-certs/redis.key  --tls-ca-cert-file /ssl-certs/ca.crt  --tls-auth-clients no
+    networks:
+      - redis-cluster
+    profiles:
+      - ssl
+      - all
+
+  # Cluster initialization (SSL)
+  redis-cluster-init-ssl:
+    image: redis:7
+    depends_on:
+      - redis-node-0-ssl
+      - redis-node-1-ssl
+      - redis-node-2-ssl
+    networks:
+      - redis-cluster
+    command: >
+      bash -c "sleep 5 && redis-cli --cluster create redis-node-0-ssl:6379 redis-node-1-ssl:6379 redis-node-2-ssl:6379 --cluster-replicas 0 --cluster-yes || true"
+    profiles:
+      - ssl
+      - all
 
 networks:
   redis-cluster:

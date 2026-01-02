@@ -10,5 +10,5 @@ class RedisPanelPlaceholder(models.Model):
 
     class Meta:
         managed = False
-        verbose_name = "Django Redis Panel"
-        verbose_name_plural = "Django Redis Panel"
+        verbose_name = "DJ Redis Panel"
+        verbose_name_plural = "DJ Redis Panel"
