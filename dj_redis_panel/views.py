@@ -6,9 +6,6 @@ from django.urls import reverse
 from django.views import View
 from django.utils.decorators import method_decorator
 from .redis_utils import RedisPanelUtils
-from urllib.parse import urlencode
-
-# Create your views here.
 
 
 def _get_page_range(current_page, total_pages):
