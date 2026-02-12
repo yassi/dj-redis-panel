@@ -57,9 +57,27 @@
                     </span>
                 </div>
                 {% endif %}
+                <div class="stat-item">
+                    <strong>{% trans 'Redis Type' %}</strong><br>
+                    <span class="stat-value">{{ type }}</span>
+
+                    {% if type == "sentinel" %}
+                    <br />
+                    (role: <span class="stat-value">{{ hero_numbers.role }}</span> slaves: <span class="stat-value">{{ hero_numbers.connected_slaves }}</span>)
+
+                    {% endif %}
+                    </span>
+                </div>
+ 
             </div>
         </div>
         {% endif %}
+    </div>
+
+    <!-- Actions Overview -->
+    <div class="module">
+        <h2>{% trans 'Actions' %}</h2>
+        <br >
     </div>
 
     <!-- Databases Overview -->

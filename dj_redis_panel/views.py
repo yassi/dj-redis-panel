@@ -95,6 +95,8 @@ def instance_overview(request, instance_alias):
         "hero_numbers": meta_data.get("hero_numbers", {}),
         "databases": meta_data.get("databases", []),
         "error_message": meta_data.get("error"),
+        "info": meta_data.get("info"),
+        "type": instance_config.get("type", "single"),
     }
     return render(request, "admin/dj_redis_panel/instance_overview.html", context)
 

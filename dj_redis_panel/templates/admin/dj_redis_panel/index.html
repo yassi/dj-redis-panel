@@ -12,6 +12,7 @@
                 <tr>
                     <th scope="col">{% trans 'Instance' %}</th>
                     <th scope="col">{% trans 'Status' %}</th>
+                    <th scope="col">{% trans 'Type' %}</th>
                     <th scope="col">{% trans 'Version' %}</th>
                     <th scope="col">{% trans 'Memory Used' %}</th>
                     <th scope="col">{% trans 'Clients' %}</th>
@@ -49,6 +50,7 @@
                             {% endif %}
                         {% endif %}
                     </td>
+                    <td>{{ instance.config.type }}</td>
                     <td>
                         {% if instance.info %}
                             {{ instance.info.redis_version }}
