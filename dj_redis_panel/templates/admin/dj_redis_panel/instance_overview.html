@@ -60,13 +60,10 @@
                 <div class="stat-item">
                     <strong>{% trans 'Redis Type' %}</strong><br>
                     <span class="stat-value">{{ type }}</span>
-
                     {% if type == "sentinel" %}
                     <br />
                     (role: <span class="stat-value">{{ hero_numbers.role }}</span> slaves: <span class="stat-value">{{ hero_numbers.connected_slaves }}</span>)
-
                     {% endif %}
-                    </span>
                 </div>
  
             </div>
