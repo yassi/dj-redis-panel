@@ -309,7 +309,7 @@ class RedisPanelUtils:
             )
 
     @classmethod
-    def _create_sentinel_connection(cls, config: Dict[str, Any]) -> RedisCluster:
+    def _create_sentinel_connection(cls, config: Dict[str, Any]) -> redis.Redis:
         """
         Create a connection to a Redis Sentinel.
         """
