@@ -1863,3 +1863,32 @@ class RedisPanelUtils:
                 exc_info=True,
             )
             return {"success": False, "error": str(e)}
+
+    @classmethod
+    def flush(cls, instance_alias: str, db_number: int = 0, flushall: bool = False) -> Dict[str, Any]:
+        """
+        Flush
+
+        Args:
+            instance_alias: Redis instance alias
+            db_number: Database number
+            flushall: flush all databases
+
+        Returns:
+            Dict with success status and any error information
+        """
+        try:
+            redis_conn = cls.get_redis_connection(instance_alias)
+
+            if flushall:
+                redis_conn.flushall()
+            else:
+                cls._select_db_if_not_cluster(redis_conn, instance_alias, db_number)
+                redis_conn.flushdb()
+            return {"success": True, "error": None, "message": f"Ok"}
+        except Exception as e:
+            logger.exception(
+                f"Error flushing db for {instance_alias} in db {db_number} and flushall {flushall}",
+                exc_info=True,
+            )
+            return {"success": False, "error": str(e)}

@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.views import View
 from django.utils.decorators import method_decorator
 from .redis_utils import RedisPanelUtils
+from urllib.parse import urlencode
 
 # Create your views here.
 
@@ -82,10 +83,16 @@ def instance_overview(request, instance_alias):
     # Get instance metadata using the utility method
     meta_data = RedisPanelUtils.get_instance_meta_data(instance_alias)
 
+    # Get feature flags
+    allow_flush = RedisPanelUtils.is_feature_enabled(
+        instance_alias, "ALLOW_FLUSH"
+    )
+
     context = {
         "title": f"Instance Overview: {instance_alias}",
         "opts": None,
         "has_permission": True,
+        "allow_flush": allow_flush,
         "site_title": admin.site.site_title,
         "site_header": admin.site.site_header,
         "site_url": admin.site.site_url,
@@ -100,6 +107,37 @@ def instance_overview(request, instance_alias):
     }
     return render(request, "admin/dj_redis_panel/instance_overview.html", context)
 
+
+@staff_member_required
+def flush(request, instance_alias, db_number=0, flushall=False):
+    # Get configured Redis instances
+    instances = RedisPanelUtils.get_instances()
+
+    # Validate instance exists
+    if instance_alias not in instances:
+        raise Http404(f"Redis instance '{instance_alias}' not found")
+
+    instance_config = instances[instance_alias]
+
+    # Get instance metadata using the utility method
+    meta_data = RedisPanelUtils.get_instance_meta_data(instance_alias)
+
+    # Get feature flags
+    allow_flush = RedisPanelUtils.is_feature_enabled(
+        instance_alias, "ALLOW_FLUSH"
+    )
+
+    url = reverse('dj_redis_panel:instance_overview', kwargs={"instance_alias": instance_alias})
+
+    if not allow_flush:
+        return HttpResponseRedirect(url)
+
+    if flushall:
+        RedisPanelUtils.flush(instance_alias, flushall=True)
+    else:
+        RedisPanelUtils.flush(instance_alias, db_number=db_number)
+
+    return HttpResponseRedirect(url)
 
 @staff_member_required
 def key_search(request, instance_alias, db_number):
