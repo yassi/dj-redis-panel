@@ -1885,7 +1885,7 @@ class RedisPanelUtils:
             else:
                 cls._select_db_if_not_cluster(redis_conn, instance_alias, db_number)
                 redis_conn.flushdb()
-            return {"success": True, "error": None, "message": f"Ok"}
+            return {"success": True, "error": None, "message": "Ok"}
         except Exception as e:
             logger.exception(
                 f"Error flushing db for {instance_alias} in db {db_number} and flushall {flushall}",
