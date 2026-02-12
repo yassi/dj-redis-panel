@@ -7,7 +7,7 @@ name = "dj-redis-panel"
 version = "0.7.4"
 description = "A Django Admin panel for browsing and inspecting Redis keys"
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
 authors = [
     {name = "Yasser Toruno"},
 ]
@@ -22,7 +22,6 @@ classifiers = [
     "Framework :: Django :: 5.1",
     "Framework :: Django :: 5.2",
     "Framework :: Django :: 6.0",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
