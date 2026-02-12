@@ -138,7 +138,7 @@
                         </td>
                         <td>
                             {% if allow_flush %}
-                            <a href="{% url 'dj_redis_panel:flushall' instance_alias "all" %}" class="button deletelink delete-button" onclick="return confirm('{% trans "Do you want to flush all?" %}');">Flush All</a>
+                            <a href="{% url 'dj_redis_panel:flushall' instance_alias %}" class="button deletelink delete-button" onclick="return confirm('{% trans "Do you want to flush all?" %}');">Flush All</a>
                             {% endif %}
                         </td>
                     </tr>
