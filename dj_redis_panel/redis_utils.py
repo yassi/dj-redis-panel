@@ -1865,7 +1865,7 @@ class RedisPanelUtils:
             return {"success": False, "error": str(e)}
 
     @classmethod
-    def flush(cls, instance_alias: str, db_number: int = 0, flushall: bool = False) -> Dict[str, Any]:
+    def flush(cls, instance_alias: str, db_number: int = 0, flushall: bool = False) -> bool:
         """
         Flush
 
@@ -1885,10 +1885,10 @@ class RedisPanelUtils:
             else:
                 cls._select_db_if_not_cluster(redis_conn, instance_alias, db_number)
                 redis_conn.flushdb()
-            return {"success": True, "error": None, "message": "Ok"}
+            return True
         except Exception as e:
             logger.exception(
                 f"Error flushing db for {instance_alias} in db {db_number} and flushall {flushall}",
                 exc_info=True,
             )
-            return {"success": False, "error": str(e)}
+            return False
