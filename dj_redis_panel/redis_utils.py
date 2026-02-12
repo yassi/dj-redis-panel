@@ -341,7 +341,7 @@ class RedisPanelUtils:
 
             sentinel = Sentinel(config['sentinels'], sentinel_kwargs=sentinel_kwargs, **kwargs)
 
-            return sentinel.master_for(config['master'], socket_timeout=socket_timeout)
+            return sentinel.master_for(config['master'], socket_timeout=socket_timeout, socket_connect_timeout=socket_connect_timeout)
         else:
             raise Exception(
                 "Redis sentinel configuration requires 'sentinels' (list of sentinels) "
