@@ -114,11 +114,6 @@ def flush(request, instance_alias, db_number=0, flushall=False):
     if instance_alias not in instances:
         raise Http404(f"Redis instance '{instance_alias}' not found")
 
-    instance_config = instances[instance_alias]
-
-    # Get instance metadata using the utility method
-    meta_data = RedisPanelUtils.get_instance_meta_data(instance_alias)
-
     # Get feature flags
     allow_flush = RedisPanelUtils.is_feature_enabled(
         instance_alias, "ALLOW_FLUSH"
