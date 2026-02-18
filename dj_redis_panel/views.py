@@ -55,16 +55,11 @@ def index(request):
 
         redis_instances.append(instance_info)
 
-    context = {
+    context = admin.site.each_context(request)
+    context.update({
         "title": "DJ Redis Panel - Instances",
-        "opts": None,
-        "has_permission": True,
-        "site_title": admin.site.site_title,
-        "site_header": admin.site.site_header,
-        "site_url": admin.site.site_url,
-        "user": request.user,
         "redis_instances": redis_instances,
-    }
+    })
     return render(request, "admin/dj_redis_panel/index.html", context)
 
 
@@ -82,20 +77,15 @@ def instance_overview(request, instance_alias):
     # Get instance metadata using the utility method
     meta_data = RedisPanelUtils.get_instance_meta_data(instance_alias)
 
-    context = {
+    context = admin.site.each_context(request)
+    context.update({
         "title": f"Instance Overview: {instance_alias}",
-        "opts": None,
-        "has_permission": True,
-        "site_title": admin.site.site_title,
-        "site_header": admin.site.site_header,
-        "site_url": admin.site.site_url,
-        "user": request.user,
         "instance_alias": instance_alias,
         "instance_config": instance_config,
         "hero_numbers": meta_data.get("hero_numbers", {}),
         "databases": meta_data.get("databases", []),
         "error_message": meta_data.get("error"),
-    }
+    })
     return render(request, "admin/dj_redis_panel/instance_overview.html", context)
 
 
@@ -187,14 +177,9 @@ def key_search(request, instance_alias, db_number):
             "has_more": False,
         }
 
-    context = {
+    context = admin.site.each_context(request)
+    context.update({
         "title": f"{instance_alias}::DB{selected_db}::Key Search",
-        "opts": None,
-        "has_permission": True,
-        "site_title": admin.site.site_title,
-        "site_header": admin.site.site_header,
-        "site_url": admin.site.site_url,
-        "user": request.user,
         "instance_alias": instance_alias,
         "instance_config": instance_config,
         "search_query": search_query,
@@ -220,7 +205,7 @@ def key_search(request, instance_alias, db_number):
         "use_cursor_pagination": use_cursor_pagination,
         "current_cursor": scan_result.get("current_cursor", 0),
         "next_cursor": scan_result.get("next_cursor", 0),
-    }
+    })
     return render(request, "admin/dj_redis_panel/key_search.html", context)
 
 
@@ -810,13 +795,8 @@ class KeyDetailView(View):
 
     def _build_context(self, key_data, error_message=None, success_message=None):
         """Build template context"""
-        return {
-            "opts": None,
-            "has_permission": True,
-            "site_title": admin.site.site_title,
-            "site_header": admin.site.site_header,
-            "site_url": admin.site.site_url,
-            "user": self.request.user,
+        context = admin.site.each_context(self.request)
+        context.update({
             "instance_alias": self.instance_alias,
             "instance_config": self.instance_config,
             "db_number": self.db_number,
@@ -858,7 +838,8 @@ class KeyDetailView(View):
             "next_cursor": key_data.get("next_cursor", 0),
             "range_start": key_data.get("range_start"),
             "range_end": key_data.get("range_end"),
-        }
+        })
+        return context
 
 
 @staff_member_required
@@ -910,19 +891,14 @@ def key_add(request, instance_alias, db_number):
                 else:
                     error_message = result["error"]
 
-    context = {
+    context = admin.site.each_context(request)
+    context.update({
         "title": f"Add New Key - {instance_alias}::DB{selected_db}",
-        "opts": None,
-        "has_permission": True,
-        "site_title": admin.site.site_title,
-        "site_header": admin.site.site_header,
-        "site_url": admin.site.site_url,
-        "user": request.user,
         "instance_alias": instance_alias,
         "instance_config": instance_config,
         "selected_db": selected_db,
         "allow_key_edit": allow_key_edit,
         "error_message": error_message,
         "success_message": success_message,
-    }
+    })
     return render(request, "admin/dj_redis_panel/key_add.html", context)
