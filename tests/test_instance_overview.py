@@ -163,7 +163,7 @@ class TestInstanceOverviewView(RedisTestCase):
         # Check required context fields
         context = response.context
         required_fields = [
-            'title', 'opts', 'has_permission', 'site_title', 
+            'title', 'has_permission', 'site_title', 
             'site_header', 'site_url', 'user', 'instance_alias',
             'instance_config', 'hero_numbers', 'databases', 'error_message'
         ]

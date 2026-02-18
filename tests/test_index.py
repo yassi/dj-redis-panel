@@ -95,7 +95,7 @@ class TestIndexView(RedisTestCase):
         # Check required context fields
         context = response.context
         required_fields = [
-            'title', 'opts', 'has_permission', 'site_title', 
+            'title', 'has_permission', 'site_title', 
             'site_header', 'site_url', 'user', 'redis_instances'
         ]
         
