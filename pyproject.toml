@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dj-redis-panel"
-version = "0.7.4"
+version = "0.7.5"
 description = "A Django Admin panel for browsing and inspecting Redis keys"
 readme = "README.md"
 license = {text = "MIT"}
