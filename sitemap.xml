@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>https://yassi.github.io/dj-redis-panel/</loc>
+         <lastmod>2026-02-18</lastmod>
+    </url>
+    <url>
+         <loc>https://yassi.github.io/dj-redis-panel/configuration/</loc>
+         <lastmod>2026-02-18</lastmod>
+    </url>
+    <url>
+         <loc>https://yassi.github.io/dj-redis-panel/development/</loc>
+         <lastmod>2026-02-18</lastmod>
+    </url>
+    <url>
+         <loc>https://yassi.github.io/dj-redis-panel/features/</loc>
+         <lastmod>2026-02-18</lastmod>
+    </url>
+    <url>
+         <loc>https://yassi.github.io/dj-redis-panel/installation/</loc>
+         <lastmod>2026-02-18</lastmod>
+    </url>
+    <url>
+         <loc>https://yassi.github.io/dj-redis-panel/quick-start/</loc>
+         <lastmod>2026-02-18</lastmod>
+    </url>
+    <url>
+         <loc>https://yassi.github.io/dj-redis-panel/testing/</loc>
+         <lastmod>2026-02-18</lastmod>
+    </url>
+</urlset>
