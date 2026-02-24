@@ -1,4 +1,5 @@
 import redis
+from redis.sentinel import Sentinel
 from redis.cluster import ClusterNode, RedisCluster
 import logging
 from django.conf import settings
@@ -162,6 +163,8 @@ class RedisPanelUtils:
 
         if connection_type == "cluster":
             return cls._create_cluster_connection(instance_config)
+        elif connection_type == "sentinel":
+            return cls._create_sentinel_connection(instance_config)
         else:
             return cls._create_single_connection(instance_config)
 
@@ -306,6 +309,47 @@ class RedisPanelUtils:
             )
 
     @classmethod
+    def _create_sentinel_connection(cls, config: Dict[str, Any]) -> redis.Redis:
+        """
+        Create a connection to a Redis Sentinel.
+        """
+
+        global_settings = cls.get_settings()
+
+        # Get timeout configuration for this instance or use global settings
+        socket_timeout = config.get(
+            "socket_timeout",
+            global_settings.get("socket_timeout", DEFAULT_SOCKET_TIMEOUT),
+        )
+        socket_connect_timeout = config.get(
+            "socket_connect_timeout",
+            global_settings.get(
+                "socket_connect_timeout", DEFAULT_SOCKET_CONNECT_TIMEOUT
+            ),
+        )
+
+        if "sentinels" in config and "master" in config:
+            logger.debug("Connect to redis sentinel and get master")
+
+            kwargs = {
+                "socket_timeout": socket_timeout,
+            }
+            sentinel_kwargs = config.get("sentinel_kwargs", {})
+
+            if "password" in config:
+                kwargs['password'] = config['password']
+
+            sentinel = Sentinel(config['sentinels'], sentinel_kwargs=sentinel_kwargs, **kwargs)
+
+            return sentinel.master_for(config['master'], socket_timeout=socket_timeout, socket_connect_timeout=socket_connect_timeout)
+        else:
+            raise Exception(
+                "Redis sentinel configuration requires 'sentinels' (list of sentinels) "
+                "and 'master' (master name in the sentinels)"
+            )
+
+
+    @classmethod
     def get_instance_meta_data(cls, instance_alias: str) -> Dict[str, Any]:
         """
         Ping a redis instance and return meta data about the instance.
@@ -374,6 +418,8 @@ class RedisPanelUtils:
                 "connected_clients": info.get("connected_clients", 0),
                 "uptime": info.get("uptime_in_seconds", 0),
                 "total_commands_processed": info.get("total_commands_processed", 0),
+                "connected_slaves": info.get("connected_slaves", 0),
+                "role": info.get("role", "single"),
                 "cluster_enabled": is_cluster,
             }
 
@@ -1817,3 +1863,32 @@ class RedisPanelUtils:
                 exc_info=True,
             )
             return {"success": False, "error": str(e)}
+
+    @classmethod
+    def flush(cls, instance_alias: str, db_number: int = 0, flushall: bool = False) -> bool:
+        """
+        Flush
+
+        Args:
+            instance_alias: Redis instance alias
+            db_number: Database number
+            flushall: flush all databases
+
+        Returns:
+            Dict with success status and any error information
+        """
+        try:
+            redis_conn = cls.get_redis_connection(instance_alias)
+
+            if flushall:
+                redis_conn.flushall()
+            else:
+                cls._select_db_if_not_cluster(redis_conn, instance_alias, db_number)
+                redis_conn.flushdb()
+            return True
+        except Exception as e:
+            logger.exception(
+                f"Error flushing db for {instance_alias} in db {db_number} and flushall {flushall}",
+                exc_info=True,
+            )
+            return False

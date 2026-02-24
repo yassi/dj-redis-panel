@@ -24,6 +24,7 @@ A Django Admin panel for browsing, inspecting, and managing Redis keys. No postg
 - **Django Admin Integration**: Seamless integration with Django admin styling and dark mode
 - **Permission Control**: Respects Django admin permissions and staff-only access
 - **Multiple Instances**: Support for multiple Redis instances with different configurations
+- **Flush**: Support for flushdb or flushall
 
 ## Supported Redis Data Types
 
@@ -137,6 +138,7 @@ DJ_REDIS_PANEL_SETTINGS = {
     "ALLOW_KEY_DELETE": False,
     "ALLOW_KEY_EDIT": True,
     "ALLOW_TTL_UPDATE": True,
+    "ALLOW_FLUSH": True,
     "CURSOR_PAGINATED_SCAN": False,
     "CURSOR_PAGINATED_COLLECTIONS": False,
     
@@ -210,6 +212,7 @@ underlying redis client (redis-py)
 | `ALLOW_KEY_DELETE` | `False` | Allow deletion of Redis keys |
 | `ALLOW_KEY_EDIT` | `True` | Allow editing of key values |
 | `ALLOW_TTL_UPDATE` | `True` | Allow updating key TTL (expiration) |
+| `ALLOW_FLUSH` | `False` | Allow flushdb or flushall |
 | `CURSOR_PAGINATED_SCAN` | `False` | Use cursor-based pagination instead of page-based |
 | `CURSOR_PAGINATED_COLLECTIONS` | `False` | Use cursor based pagination for key values like lists and hashs |
 | `MAX_KEYS_PAGINATED_SCAN` | `100000` | Maximum number of keys to collect during page-based pagination. Only applies when `CURSOR_PAGINATED_SCAN` is `False`. Prevents memory issues with large datasets. |
@@ -309,6 +312,24 @@ almost certainly the least likely use case.
     },
 }
 ```
+
+#### Connection Sentinels:
+If you are operating in a Redis Sentinel environment, you can connect using the `type:sentinel` option. You must also provide the list of `sentinels`, the name of the `master`, and, if it is password protected, the `password` in the `sentinels_kwargs` dictionary.
+```python
+"instance_name": {
+    "description": "Sentinel -> Master", 
+    "socket_timeout": 1.0, # Optional: will use sane default
+    "socket_connect_timeout": 1.0, # Optional: will use sane default
+    "sentinels": [("sentinel1", 26379), ("sentinel2", 26379)],
+    "master": "mymaster",
+    "password": "Redis-Master-Pass", # optional: if your master require pass
+    "sentinel_kwargs": {
+        "password": "Redis-Sentinel-Pass", # optional: if your sentinel require pass
+    },
+}
+
+Other options in `sentinels_kwargs` can be `username`, `ssl`, or `ssl_ca_cert`. For any questions, refer to the Redis library documentation.
+
 
 ## License
 

@@ -57,6 +57,15 @@
                     </span>
                 </div>
                 {% endif %}
+                <div class="stat-item">
+                    <strong>{% trans 'Redis Type' %}</strong><br>
+                    <span class="stat-value">{{ type }}</span>
+                    {% if type == "sentinel" %}
+                    <br />
+                    (role: <span class="stat-value">{{ hero_numbers.role }}</span> slaves: <span class="stat-value">{{ hero_numbers.connected_slaves }}</span>)
+                    {% endif %}
+                </div>
+ 
             </div>
         </div>
         {% endif %}
@@ -76,7 +85,7 @@
                         <th scope="col">{% trans 'Keys' %}</th>
                         <th scope="col">{% trans 'Avg TTL (s)' %}</th>
                         <th scope="col">{% trans 'Expires' %}</th>
-                        <th scope="col">{% trans 'Actions' %}</th>
+                        <th scope="col" colspan=2>{% trans 'Actions' %}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -110,13 +119,30 @@
                             {% endif %}
                         </td>
                         <td>
-                            <a href="{% url 'dj_redis_panel:key_search' instance_alias db.db_number %}" class="default">
+                            <a href="{% url 'dj_redis_panel:key_search' instance_alias db.db_number %}" class="button default">
                                 {% trans 'Browse Keys' %}
                             </a>
                         </td>
+                        <td>
+                            {% if allow_flush %}
+                            <a href="{% url 'dj_redis_panel:flushdb' instance_alias db.db_number %}" class="button deletelink delete-button" onclick="return confirm('{% trans "Do you want to flush the DB?" %}');">Flush</a>
+                            {% endif %}
+                        </td>
                     </tr>
                     {% endfor %}
+                    <tr><td colspan=6></td></tr>
                 </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan=5>
+                        </td>
+                        <td>
+                            {% if allow_flush %}
+                            <a href="{% url 'dj_redis_panel:flushall' instance_alias %}" class="button deletelink delete-button" onclick="return confirm('{% trans "Do you want to flush all?" %}');">Flush All</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>

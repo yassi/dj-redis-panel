@@ -7,8 +7,6 @@ from django.views import View
 from django.utils.decorators import method_decorator
 from .redis_utils import RedisPanelUtils
 
-# Create your views here.
-
 
 def _get_page_range(current_page, total_pages):
     """
@@ -77,6 +75,11 @@ def instance_overview(request, instance_alias):
     # Get instance metadata using the utility method
     meta_data = RedisPanelUtils.get_instance_meta_data(instance_alias)
 
+    # Get feature flags
+    allow_flush = RedisPanelUtils.is_feature_enabled(
+        instance_alias, "ALLOW_FLUSH"
+    )
+
     context = admin.site.each_context(request)
     context.update({
         "title": f"Instance Overview: {instance_alias}",
@@ -85,9 +88,38 @@ def instance_overview(request, instance_alias):
         "hero_numbers": meta_data.get("hero_numbers", {}),
         "databases": meta_data.get("databases", []),
         "error_message": meta_data.get("error"),
+        "allow_flush": allow_flush,
+        "info": meta_data.get("info"),
+        "type": instance_config.get("type", "single"),
     })
     return render(request, "admin/dj_redis_panel/instance_overview.html", context)
 
+
+@staff_member_required
+def flush(request, instance_alias, db_number=0, flushall=False):
+    # Get configured Redis instances
+    instances = RedisPanelUtils.get_instances()
+
+    # Validate instance exists
+    if instance_alias not in instances:
+        raise Http404(f"Redis instance '{instance_alias}' not found")
+
+    # Get feature flags
+    allow_flush = RedisPanelUtils.is_feature_enabled(
+        instance_alias, "ALLOW_FLUSH"
+    )
+
+    url = reverse('dj_redis_panel:instance_overview', kwargs={"instance_alias": instance_alias})
+
+    if not allow_flush:
+        return HttpResponseRedirect(url)
+
+    if flushall:
+        RedisPanelUtils.flush(instance_alias, flushall=True)
+    else:
+        RedisPanelUtils.flush(instance_alias, db_number=db_number)
+
+    return HttpResponseRedirect(url)
 
 @staff_member_required
 def key_search(request, instance_alias, db_number):
