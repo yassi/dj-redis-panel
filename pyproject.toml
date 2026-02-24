@@ -38,6 +38,9 @@ dependencies = [
     "redis>=4.0",
 ]
 
+[project.entry-points."dj_control_room.panels"]
+dj_redis_panel = "dj_redis_panel.panel:RedisPanel"
+
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0.0",

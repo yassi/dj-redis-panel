@@ -130,7 +130,7 @@ class TestKeySearchView(RedisTestCase):
         # Check required context fields
         context = response.context
         required_fields = [
-            'title', 'opts', 'has_permission', 'site_title', 
+            'title', 'has_permission', 'site_title', 
             'site_header', 'site_url', 'user', 'instance_alias',
             'instance_config', 'search_query', 'selected_db',
             'keys_data', 'total_keys', 'showing_keys', 'error_message',
