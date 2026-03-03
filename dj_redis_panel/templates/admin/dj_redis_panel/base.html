@@ -4,9 +4,9 @@
 {% block title %}{{ title }} | DJ Redis Panel{% endblock %}
 
 {% block extrahead %}
-<style type="text/css">
-    {% include "admin/dj_redis_panel/styles.css" %}
-</style>
+{{ block.super }}
+{% if dj_cr_load_default_css %}<link rel="stylesheet" href="{% static 'dj_redis_panel/css/styles.css' %}">{% endif %}
+{{ dj_cr_extra_css }}
 {% endblock %}
 
 {% block branding %}
