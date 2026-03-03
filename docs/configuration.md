@@ -380,6 +380,39 @@ Django Redis Panel validates your configuration on startup. Common validation er
 - Use SSL/TLS for connections over untrusted networks
 - Consider using Redis ACLs for fine-grained access control
 
+## CSS Customization
+
+### `LOAD_DEFAULT_CSS`
+
+**Type:** `bool`  
+**Default:** `True`  
+**Description:** Whether to load the built-in Redis Panel stylesheet. Set to `False` to use your own styles from scratch.
+
+```python
+DJ_REDIS_PANEL_SETTINGS = {
+    'LOAD_DEFAULT_CSS': False,  # Skip built-in styles entirely
+}
+```
+
+### `EXTRA_CSS`
+
+**Type:** `list[str]`  
+**Default:** `[]`  
+**Description:** Additional stylesheets to load after the default CSS. Accepts static file paths or full URLs.
+
+Static file paths are **relative to your app's `static/` subdirectory** (same convention as Django's `{% static %}` tag). A file at `myapp/static/myapp/css/overrides.css` is referenced as `myapp/css/overrides.css`.
+
+```python
+DJ_REDIS_PANEL_SETTINGS = {
+    'EXTRA_CSS': [
+        # File lives at: myapp/static/myapp/css/overrides.css
+        'myapp/css/overrides.css',
+        # Full URLs are also supported
+        'https://cdn.example.com/theme.css',
+    ],
+}
+```
+
 ## Next Steps
 
 - [Quick Start Guide](quick-start.md) - Get started with your configured instances

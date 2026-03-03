@@ -5,6 +5,7 @@ from django.http import Http404, HttpResponseRedirect
 from django.urls import reverse
 from django.views import View
 from django.utils.decorators import method_decorator
+from .conf import get_css_context
 from .redis_utils import RedisPanelUtils
 
 # Create your views here.
@@ -56,6 +57,7 @@ def index(request):
         redis_instances.append(instance_info)
 
     context = admin.site.each_context(request)
+    context.update(get_css_context())
     context.update({
         "title": "DJ Redis Panel - Instances",
         "redis_instances": redis_instances,
@@ -78,6 +80,7 @@ def instance_overview(request, instance_alias):
     meta_data = RedisPanelUtils.get_instance_meta_data(instance_alias)
 
     context = admin.site.each_context(request)
+    context.update(get_css_context())
     context.update({
         "title": f"Instance Overview: {instance_alias}",
         "instance_alias": instance_alias,
@@ -178,6 +181,7 @@ def key_search(request, instance_alias, db_number):
         }
 
     context = admin.site.each_context(request)
+    context.update(get_css_context())
     context.update({
         "title": f"{instance_alias}::DB{selected_db}::Key Search",
         "instance_alias": instance_alias,
@@ -796,6 +800,7 @@ class KeyDetailView(View):
     def _build_context(self, key_data, error_message=None, success_message=None):
         """Build template context"""
         context = admin.site.each_context(self.request)
+        context.update(get_css_context())
         context.update({
             "instance_alias": self.instance_alias,
             "instance_config": self.instance_config,
@@ -892,6 +897,7 @@ def key_add(request, instance_alias, db_number):
                     error_message = result["error"]
 
     context = admin.site.each_context(request)
+    context.update(get_css_context())
     context.update({
         "title": f"Add New Key - {instance_alias}::DB{selected_db}",
         "instance_alias": instance_alias,

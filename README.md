@@ -139,6 +139,12 @@ DJ_REDIS_PANEL_SETTINGS = {
     "ALLOW_TTL_UPDATE": True,
     "CURSOR_PAGINATED_SCAN": False,
     "CURSOR_PAGINATED_COLLECTIONS": False,
+
+    # CSS: load built-in styles and/or inject your own
+    "LOAD_DEFAULT_CSS": True,
+    # Static paths are relative to app's static/ dir (e.g. 'myapp/css/overrides.css'
+    # for a file at myapp/static/myapp/css/overrides.css). Full URLs also accepted.
+    "EXTRA_CSS": [],
     
     # Limits for page-based pagination (only applies when CURSOR_PAGINATED_SCAN is False)
     "MAX_KEYS_PAGINATED_SCAN": 100000,  # Maximum keys to collect in memory
