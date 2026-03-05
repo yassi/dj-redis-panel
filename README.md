@@ -5,7 +5,7 @@
 [![PyPI version](https://badge.fury.io/py/dj-redis-panel.svg)](https://badge.fury.io/py/dj-redis-panel)
 [![Python versions](https://img.shields.io/pypi/pyversions/dj-redis-panel.svg)](https://pypi.org/project/dj-redis-panel/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Downloads](https://img.shields.io/pypi/dm/dj-control-room.svg)](https://pypi.org/project/dj-control-room/)
+[![Downloads](https://img.shields.io/pypi/dm/dj-redis-panel.svg)](https://pypi.org/project/dj-redis-panel/)
 
 A Django Admin panel for browsing, inspecting, and managing Redis keys. No postgres/mysql models or changes required.
 
